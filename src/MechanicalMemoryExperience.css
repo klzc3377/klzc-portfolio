@@ -1,0 +1,731 @@
+.mechanical-memory {
+  --memory-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --memory-mono: "IBM Plex Mono", Consolas, monospace;
+  position: relative;
+  height: 760svh;
+  min-height: 4700px;
+  color: #f2f6f7;
+  background: #020508;
+}
+
+.mechanical-memory__sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  min-height: 620px;
+  overflow: hidden;
+  isolation: isolate;
+  background: #020508;
+}
+
+.mechanical-memory__scene,
+.mechanical-memory__scene canvas,
+.mechanical-memory__shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mechanical-memory__scene {
+  z-index: 0;
+}
+
+.mechanical-memory__scene canvas {
+  display: block;
+  pointer-events: auto;
+  touch-action: pan-y;
+}
+
+.mechanical-memory__shade {
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 52% 43%, transparent 28%, rgba(0, 0, 0, 0.2) 69%, rgba(0, 0, 0, 0.48) 112%),
+    linear-gradient(112deg, rgba(0, 28, 36, 0.12), transparent 43%, rgba(46, 0, 12, 0.1));
+  box-shadow:
+    inset 0 120px 150px rgba(0, 0, 0, 0.48),
+    inset 0 -150px 180px rgba(0, 0, 0, 0.6),
+    inset 130px 0 220px rgba(0, 0, 0, 0.34);
+}
+
+.mechanical-memory__quick-links {
+  position: absolute;
+  z-index: 7;
+  top: 25px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 4px;
+  border: 1px solid rgba(190, 226, 233, 0.3);
+  border-radius: 999px;
+  background: rgba(3, 10, 13, 0.66);
+  backdrop-filter: blur(18px) saturate(1.18);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+}
+
+.mechanical-memory__quick-links a,
+.mechanical-memory__quick-links button {
+  min-width: 86px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(242, 246, 247, 0.78);
+  background: transparent;
+  font-family: var(--memory-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 180ms ease, background-color 180ms ease;
+}
+
+.mechanical-memory__quick-links a:hover,
+.mechanical-memory__quick-links button:hover,
+.mechanical-memory__quick-links a:focus-visible,
+.mechanical-memory__quick-links button:focus-visible {
+  color: #ffffff;
+  background: rgba(127, 226, 242, 0.09);
+}
+
+.mechanical-memory__intro {
+  position: absolute;
+  z-index: 4;
+  left: clamp(28px, 8vw, 138px);
+  top: clamp(118px, 17vh, 188px);
+  width: min(690px, 58vw);
+  pointer-events: none;
+}
+
+.mechanical-memory__intro > p,
+.mechanical-memory__chapter article > p:first-child,
+.mechanical-memory__end > p,
+.mechanical-memory__loading,
+.mechanical-memory__cue {
+  margin: 0;
+  font-family: var(--memory-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.mechanical-memory__intro > p {
+  margin-bottom: 22px;
+  color: rgba(218, 234, 238, 0.56);
+}
+
+.mechanical-memory__intro > p::before {
+  content: '';
+  width: 34px;
+  height: 1px;
+  display: inline-block;
+  margin-right: 12px;
+  vertical-align: middle;
+  background: #ff2440;
+}
+
+.mechanical-memory__intro h1 {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--memory-display);
+  font-size: clamp(68px, 7.2vw, 118px);
+  font-weight: 600;
+  line-height: 0.72;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.mechanical-memory__intro h1 span:first-child {
+  color: #f5f7f7;
+}
+
+.mechanical-memory__intro h1 span:last-child {
+  margin-top: 0.22em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(238, 245, 247, 0.72);
+}
+
+.mechanical-memory__intro > div {
+  max-width: 620px;
+  margin-top: 42px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  color: rgba(225, 237, 240, 0.76);
+  font-family: var(--memory-mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+}
+
+.mechanical-memory__intro > div::before {
+  content: '';
+  width: 2px;
+  height: 54px;
+  flex: 0 0 2px;
+  background: #ff2440;
+  box-shadow: 0 0 24px rgba(255, 36, 64, 0.55);
+}
+
+.mechanical-memory__intro strong {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.mechanical-memory__chapter {
+  position: absolute;
+  z-index: 5;
+  left: clamp(28px, 4.2vw, 68px);
+  bottom: clamp(52px, 7vh, 78px);
+  width: min(334px, 30vw);
+  pointer-events: none;
+}
+
+.mechanical-memory__chapter article {
+  min-height: 270px;
+  padding: 22px 24px 24px;
+  border-left: 1px solid rgba(137, 224, 239, 0.48);
+  background: linear-gradient(100deg, rgba(3, 8, 12, 0.72), rgba(3, 8, 12, 0.42) 72%, rgba(3, 8, 12, 0.12));
+  backdrop-filter: blur(13px) saturate(1.08);
+  box-shadow: 18px 24px 54px rgba(0, 0, 0, 0.22);
+  pointer-events: auto;
+}
+
+.mechanical-memory__chapter article > p:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+  color: #8de6f4;
+}
+
+.mechanical-memory__chapter article > p:first-child strong {
+  color: rgba(255, 82, 105, 0.82);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-align: right;
+}
+
+.mechanical-memory__chapter-place {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "year place"
+    "year zh";
+  align-items: end;
+  column-gap: 17px;
+  margin-bottom: 22px;
+}
+
+.mechanical-memory__chapter-place span {
+  grid-area: year;
+  color: #ff2440;
+  font-family: var(--memory-display);
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+}
+
+.mechanical-memory__chapter-place strong,
+.mechanical-memory__chapter-place em {
+  font-family: var(--memory-mono);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+}
+
+.mechanical-memory__chapter-place strong {
+  grid-area: place;
+  color: rgba(244, 248, 249, 0.9);
+}
+
+.mechanical-memory__chapter-place em {
+  grid-area: zh;
+  margin-top: 4px;
+  color: rgba(215, 231, 235, 0.5);
+}
+
+.mechanical-memory__chapter h2,
+.mechanical-memory__chapter h3 {
+  margin: 0;
+  font-family: var(--memory-display);
+  text-transform: uppercase;
+}
+
+.mechanical-memory__chapter h2 {
+  color: #f5f7f7;
+  font-size: clamp(34px, 2.8vw, 47px);
+  font-weight: 600;
+  line-height: 0.92;
+  letter-spacing: -0.035em;
+}
+
+.mechanical-memory__chapter h3 {
+  margin-top: 7px;
+  color: rgba(223, 234, 237, 0.62);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+.mechanical-memory__chapter-copy {
+  margin: 17px 0 22px;
+  max-width: 29em;
+  color: rgba(220, 234, 237, 0.62);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.mechanical-memory__chapter article > a {
+  width: fit-content;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 15px;
+  border: 1px solid rgba(137, 224, 239, 0.34);
+  border-radius: 999px;
+  color: rgba(238, 247, 248, 0.78);
+  background: rgba(8, 17, 22, 0.5);
+  font-family: var(--memory-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: border-color 180ms ease, color 180ms ease, background-color 180ms ease;
+}
+
+.mechanical-memory__chapter article > a:hover,
+.mechanical-memory__chapter article > a:focus-visible {
+  color: #ffffff;
+  border-color: rgba(255, 51, 77, 0.72);
+  background: rgba(103, 13, 28, 0.38);
+}
+
+.mechanical-memory__rail {
+  position: absolute;
+  z-index: 6;
+  top: 50%;
+  right: 26px;
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transform: translateY(-50%);
+  font-family: var(--memory-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.mechanical-memory__rail > span {
+  color: #ff2440;
+}
+
+.mechanical-memory__rail > em {
+  color: rgba(218, 232, 235, 0.35);
+  font-style: normal;
+}
+
+.mechanical-memory__rail > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(214, 229, 232, 0.16);
+  border-bottom: 1px solid rgba(214, 229, 232, 0.16);
+}
+
+.mechanical-memory__rail button {
+  width: 42px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  color: rgba(222, 235, 238, 0.3);
+  background: transparent;
+  font-family: var(--memory-mono);
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.mechanical-memory__rail button::before {
+  content: '';
+  width: 12px;
+  height: 1px;
+  display: block;
+  background: currentColor;
+  transition: width 180ms ease, color 180ms ease;
+}
+
+.mechanical-memory__rail button.is-active {
+  color: #ff2440;
+}
+
+.mechanical-memory__rail button.is-active::before {
+  width: 24px;
+}
+
+.mechanical-memory__cue {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: rgba(225, 238, 241, 0.4);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.mechanical-memory__cue i {
+  width: 1px;
+  height: 29px;
+  display: block;
+  background: rgba(230, 242, 244, 0.46);
+  animation: memoryCue 1.8s ease-in-out infinite;
+}
+
+@keyframes memoryCue {
+  0%, 100% { transform: scaleY(0.35); transform-origin: top; opacity: 0.32; }
+  50% { transform: scaleY(1); transform-origin: top; opacity: 0.9; }
+}
+
+.mechanical-memory__end {
+  position: absolute;
+  z-index: 5;
+  left: clamp(28px, 8vw, 136px);
+  top: 50%;
+  width: min(670px, 62vw);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.mechanical-memory__end > p {
+  margin-bottom: 22px;
+  color: #ff5269;
+}
+
+.mechanical-memory__end h2 {
+  margin: 0;
+  color: #f5f7f7;
+  font-family: var(--memory-display);
+  font-size: clamp(60px, 7.3vw, 116px);
+  font-weight: 600;
+  line-height: 0.83;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.mechanical-memory__end > span {
+  display: block;
+  margin-top: 26px;
+  color: rgba(218, 233, 236, 0.6);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.mechanical-memory__end > div {
+  margin-top: 34px;
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.mechanical-memory__end a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 20px;
+  border: 1px solid rgba(139, 224, 238, 0.36);
+  border-radius: 999px;
+  color: rgba(243, 248, 249, 0.82);
+  background: rgba(2, 8, 11, 0.72);
+  font-family: var(--memory-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.mechanical-memory__end a:first-child {
+  color: #ffffff;
+  border-color: rgba(255, 47, 73, 0.64);
+  background: rgba(115, 14, 30, 0.58);
+}
+
+.mechanical-memory__end a:hover,
+.mechanical-memory__end a:focus-visible {
+  color: #ffffff;
+  border-color: rgba(147, 234, 247, 0.76);
+  background: rgba(14, 38, 44, 0.74);
+}
+
+.mechanical-memory__loading {
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 17px;
+  color: rgba(225, 238, 241, 0.66);
+  background: #020508;
+}
+
+.mechanical-memory__loading i {
+  width: 160px;
+  height: 1px;
+  display: block;
+  overflow: hidden;
+  background: rgba(229, 240, 242, 0.13);
+}
+
+.mechanical-memory__loading i::after {
+  content: '';
+  width: 54px;
+  height: 1px;
+  display: block;
+  background: #ff2440;
+  box-shadow: 0 0 14px rgba(255, 36, 64, 0.7);
+  animation: memoryLoading 1.15s ease-in-out infinite;
+}
+
+.mechanical-memory__loading small {
+  color: rgba(224, 237, 240, 0.46);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
+
+.mechanical-memory__loading--error {
+  pointer-events: none;
+  background: rgba(2, 5, 8, 0.88);
+}
+
+@keyframes memoryLoading {
+  from { transform: translateX(-54px); }
+  to { transform: translateX(160px); }
+}
+
+.mechanical-memory__accessible-list {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .mechanical-memory {
+    height: 660svh;
+    min-height: 4200px;
+  }
+
+  .mechanical-memory__quick-links {
+    top: 18px;
+    right: 20px;
+  }
+
+  .mechanical-memory__quick-links a,
+  .mechanical-memory__quick-links button {
+    min-width: 70px;
+    padding: 0 12px;
+  }
+
+  .mechanical-memory__intro {
+    left: 26px;
+    top: 126px;
+    width: calc(100% - 70px);
+  }
+
+  .mechanical-memory__intro h1 {
+    font-size: clamp(62px, 15vw, 105px);
+  }
+
+  .mechanical-memory__chapter {
+    left: 22px;
+    bottom: 54px;
+    width: min(340px, calc(100vw - 88px));
+  }
+
+  .mechanical-memory__rail {
+    right: 14px;
+  }
+
+  .mechanical-memory__end {
+    left: 26px;
+    top: auto;
+    bottom: 38px;
+    width: calc(100% - 80px);
+    transform: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .mechanical-memory__sticky {
+    min-height: 560px;
+  }
+
+  .mechanical-memory__quick-links {
+    top: 16px;
+    right: 14px;
+  }
+
+  .mechanical-memory__quick-links a,
+  .mechanical-memory__quick-links button {
+    min-width: 55px;
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: 8px;
+  }
+
+  .mechanical-memory__intro {
+    top: 118px;
+    left: 20px;
+    width: calc(100% - 40px);
+  }
+
+  .mechanical-memory__intro > p {
+    margin-bottom: 17px;
+    font-size: 9px;
+  }
+
+  .mechanical-memory__intro h1 {
+    font-size: clamp(55px, 17vw, 78px);
+    line-height: 0.77;
+  }
+
+  .mechanical-memory__intro > div {
+    margin-top: 27px;
+    gap: 14px;
+    max-width: calc(100% - 24px);
+    align-items: flex-start;
+    font-size: 9px;
+    line-height: 1.55;
+  }
+
+  .mechanical-memory__intro > div::before {
+    height: 40px;
+  }
+
+  .mechanical-memory__chapter {
+    left: 15px;
+    bottom: 44px;
+    width: calc(100% - 62px);
+  }
+
+  .mechanical-memory__chapter article {
+    min-height: 248px;
+    padding: 18px 18px 19px;
+    background: rgba(3, 8, 12, 0.72);
+  }
+
+  .mechanical-memory__chapter article > p:first-child {
+    margin-bottom: 13px;
+    font-size: 8px;
+  }
+
+  .mechanical-memory__chapter-place {
+    margin-bottom: 15px;
+  }
+
+  .mechanical-memory__chapter-place span {
+    font-size: 44px;
+  }
+
+  .mechanical-memory__chapter h2 {
+    font-size: 36px;
+  }
+
+  .mechanical-memory__chapter h3 {
+    font-size: 14px;
+  }
+
+  .mechanical-memory__chapter-copy {
+    margin: 12px 0 16px;
+    font-size: 11px;
+    line-height: 1.62;
+  }
+
+  .mechanical-memory__chapter article > a {
+    min-height: 34px;
+    font-size: 8px;
+  }
+
+  .mechanical-memory__rail {
+    right: 6px;
+    width: 40px;
+  }
+
+  .mechanical-memory__rail button {
+    width: 36px;
+  }
+
+  .mechanical-memory__cue {
+    display: none;
+  }
+
+  .mechanical-memory__end {
+    left: 20px;
+    bottom: 24px;
+    width: calc(100% - 54px);
+  }
+
+  .mechanical-memory__end h2 {
+    font-size: clamp(51px, 14.5vw, 70px);
+    line-height: 0.88;
+  }
+
+  .mechanical-memory__end > span {
+    margin-top: 20px;
+    font-size: 12px;
+  }
+
+  .mechanical-memory__end > div {
+    margin-top: 26px;
+    flex-wrap: wrap;
+  }
+
+  .mechanical-memory__end a {
+    min-height: 40px;
+    padding: 0 16px;
+    font-size: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mechanical-memory__cue i,
+  .mechanical-memory__loading i::after {
+    animation: none;
+  }
+
+  .mechanical-memory__quick-links a,
+  .mechanical-memory__quick-links button,
+  .mechanical-memory__chapter article > a,
+  .mechanical-memory__end a,
+  .mechanical-memory__rail button::before {
+    transition: none;
+  }
+}
