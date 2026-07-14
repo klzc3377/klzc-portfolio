@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "assets": "node scripts/prepare-assets.mjs",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/prepare-sites-dist.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

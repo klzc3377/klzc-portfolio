@@ -37,6 +37,9 @@ src/
 ├─ MechanicalMemoryExperience.*  首页 3D 机械叙事
 └─ App.tsx              页面编排、路由状态与全站元信息
 
+worker/
+└─ index.js              Sites / Cloudflare Workers 静态资源与 SPA 回退入口
+
 public/
 ├─ assets/              已压缩的图片、HDR 与案例图
 ├─ models/              当前使用的 GLB 三维模型

@@ -1,0 +1,13 @@
+import { copyFile, mkdir } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const distDirectory = resolve(projectRoot, 'dist')
+const serverDirectory = resolve(distDirectory, 'server')
+const hostingDirectory = resolve(distDirectory, '.openai')
+
+await mkdir(serverDirectory, { recursive: true })
+await mkdir(hostingDirectory, { recursive: true })
+await copyFile(resolve(projectRoot, 'worker', 'index.js'), resolve(serverDirectory, 'index.js'))
+await copyFile(resolve(projectRoot, '.openai', 'hosting.json'), resolve(hostingDirectory, 'hosting.json'))
