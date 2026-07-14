@@ -35,6 +35,7 @@ function updateDocumentMetadata(path: RoutePath) {
   document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute('content', description)
   document.querySelector<HTMLMetaElement>('meta[property="og:title"]')?.setAttribute('content', document.title)
   document.querySelector<HTMLMetaElement>('meta[property="og:description"]')?.setAttribute('content', description)
+  document.querySelector<HTMLMetaElement>('meta[property="og:url"]')?.setAttribute('content', `${window.location.origin}${path}`)
   document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]')?.setAttribute('content', document.title)
   document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]')?.setAttribute('content', description)
   let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
