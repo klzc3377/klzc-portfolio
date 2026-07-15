@@ -430,7 +430,7 @@ function createParticles(compact: boolean) {
   // Build a layered, soft-focus dust volume instead of a uniform star field.
   // The dense knots sit behind the helix and give the scene the iridescent,
   // photographic depth of the reference without competing with the cards.
-  const count = compact ? 1500 : 11000
+  const count = compact ? 6000 : 11000
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
@@ -563,7 +563,7 @@ function createParticles(compact: boolean) {
 function createVolumetricClouds(compact: boolean) {
   // A small number of broad, irregular veils supplies the missing mid-frequency
   // detail between the tiny dust and the large mechanical silhouette.
-  const count = compact ? 26 : 72
+  const count = compact ? 60 : 72
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
@@ -667,7 +667,7 @@ function createVolumetricClouds(compact: boolean) {
 }
 
 function createAssemblyAura(compact: boolean) {
-  const count = compact ? 620 : 2400
+  const count = compact ? 1800 : 2400
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
@@ -776,7 +776,7 @@ function createCinematicLightField(compact: boolean) {
       uAccent: { value: new THREE.Color(0xff3651) },
       uCool: { value: new THREE.Color(0x63dbea) },
       uTime: { value: 0 },
-      uIntensity: { value: compact ? 0.54 : 0.68 },
+      uIntensity: { value: 0.68 },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -876,8 +876,8 @@ function wrapCanvasText(
 
 function createTimelineFaceTexture(entry: MemoryEntry, index: number, compact: boolean) {
   const canvas = document.createElement('canvas')
-  canvas.width = compact ? 1018 : 1696
-  canvas.height = compact ? 600 : 1000
+  canvas.width = compact ? 1358 : 1696
+  canvas.height = compact ? 800 : 1000
   const context = canvas.getContext('2d')
   if (!context) return new THREE.CanvasTexture(canvas)
 
@@ -968,7 +968,7 @@ function createTimelineFaceTexture(entry: MemoryEntry, index: number, compact: b
 
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
-  texture.anisotropy = compact ? 4 : 8
+  texture.anisotropy = 8
   texture.minFilter = THREE.LinearMipmapLinearFilter
   texture.magFilter = THREE.LinearFilter
   texture.needsUpdate = true
@@ -1113,7 +1113,7 @@ function createCardVisual(
   const finalCardFit = 1 - smoothStep((entry.t - 0.74) / 0.14) * 0.14
   const width = baseWidth * finalCardFit
   const height = width * 0.59
-  const depth = compact ? 0.3 : 0.42
+  const depth = compact ? 0.37 : 0.42
   const materials: CardVisual['materials'] = []
   const register = <T extends THREE.Material & { opacity: number }>(material: T, opacity: number) => {
     material.transparent = true
@@ -1133,7 +1133,7 @@ function createCardVisual(
     sheenRoughness: 0.28,
     envMapIntensity: 1.28,
     depthWrite: false,
-  }), compact ? 0.68 : 0.76)
+  }), 0.76)
 
   const bodyMaterial = register(new THREE.MeshPhysicalMaterial({
     color: 0x03080c,
@@ -1143,11 +1143,11 @@ function createCardVisual(
     clearcoatRoughness: 0.1,
     envMapIntensity: 1.24,
     depthWrite: false,
-  }), compact ? 0.82 : 0.9)
+  }), 0.9)
   const body = new THREE.Mesh(new RoundedBoxGeometry(width + 0.12, height + 0.12, depth, 6, 0.13), bodyMaterial)
   body.position.z = -depth * 0.24
-  body.castShadow = !compact
-  body.receiveShadow = !compact
+  body.castShadow = true
+  body.receiveShadow = true
   group.add(body)
 
   // Four independent chassis rails expose the card's real thickness when it
@@ -1156,20 +1156,20 @@ function createCardVisual(
   const railDepth = depth * 1.18
   for (const railY of [-1, 1]) {
     const rail = new THREE.Mesh(
-      new RoundedBoxGeometry(width + 0.28, compact ? 0.075 : 0.095, railDepth, 4, 0.035),
+      new RoundedBoxGeometry(width + 0.28, compact ? 0.085 : 0.095, railDepth, 4, 0.035),
       edgeMaterial,
     )
     rail.position.set(0, railY * (height * 0.5 + 0.075), -depth * 0.1)
-    rail.castShadow = !compact
+    rail.castShadow = true
     group.add(rail)
   }
   for (const railX of [-1, 1]) {
     const rail = new THREE.Mesh(
-      new RoundedBoxGeometry(compact ? 0.075 : 0.095, height + 0.18, railDepth, 4, 0.035),
+      new RoundedBoxGeometry(compact ? 0.085 : 0.095, height + 0.18, railDepth, 4, 0.035),
       edgeMaterial,
     )
     rail.position.set(railX * (width * 0.5 + 0.09), 0, -depth * 0.1)
-    rail.castShadow = !compact
+    rail.castShadow = true
     group.add(rail)
   }
 
@@ -1195,7 +1195,7 @@ function createCardVisual(
     loaded.needsUpdate = true
   })
   photoTexture.colorSpace = THREE.SRGBColorSpace
-  photoTexture.anisotropy = compact ? 4 : 8
+  photoTexture.anisotropy = 8
   const photoWellMaterial = register(new THREE.MeshStandardMaterial({
     color: 0x010304,
     metalness: 0.38,
@@ -1256,7 +1256,7 @@ function createCardVisual(
     iridescenceIOR: 1.28,
     depthWrite: false,
     side: THREE.DoubleSide,
-  }), compact ? 0.23 : 0.28)
+  }), 0.28)
   const photoGlass = new THREE.Mesh(
     new RoundedBoxGeometry(photoWidth + 0.06, photoHeight + 0.06, 0.04, 4, 0.065),
     photoGlassMaterial,
@@ -1265,8 +1265,8 @@ function createCardVisual(
   photoGlass.renderOrder = 7
   group.add(photoGlass)
 
-  const photoFrameThickness = compact ? 0.025 : 0.035
-  const photoFrameDepth = compact ? 0.06 : 0.085
+  const photoFrameThickness = compact ? 0.03 : 0.035
+  const photoFrameDepth = compact ? 0.075 : 0.085
   for (const frameY of [-1, 1]) {
     const frame = new THREE.Mesh(
       new THREE.BoxGeometry(photoWidth + 0.13, photoFrameThickness, photoFrameDepth),
@@ -1315,7 +1315,7 @@ function createCardVisual(
     sheenRoughness: 0.36,
     depthWrite: false,
     side: THREE.DoubleSide,
-  }), compact ? 0.2 : 0.24)
+  }), 0.24)
   const glass = new THREE.Mesh(new RoundedBoxGeometry(width - 0.08, height - 0.08, 0.12, 6, 0.11), glassMaterial)
   glass.position.z = depth * 1.04
   glass.renderOrder = 8
@@ -1363,7 +1363,7 @@ function createCardVisual(
   const signalMaterial = register(new THREE.MeshStandardMaterial({
     color: accentColor,
     emissive: accentColor,
-    emissiveIntensity: compact ? 0.8 : 1.4,
+    emissiveIntensity: compact ? 1.35 : 1.4,
     metalness: 0.35,
     roughness: 0.22,
   }), 0.92)
@@ -1417,7 +1417,7 @@ function createCardVisual(
     baseQuaternion,
     materials,
     accentMaterial: signalMaterial,
-    baseEmissiveIntensity: compact ? 0.8 : 1.4,
+    baseEmissiveIntensity: compact ? 1.35 : 1.4,
     destination: entry.destination,
     photoMaterial: photoDepthMaterial,
     t: entry.t,
@@ -1453,6 +1453,20 @@ function MechanicalMemoryScene({
     let frame = 0
     let visible = true
     const compact = window.matchMedia('(max-width: 760px), (pointer: coarse)').matches
+    const hardwareThreads = navigator.hardwareConcurrency || 6
+    const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4
+    const constrainedMobile = compact && (hardwareThreads <= 4 || deviceMemory <= 2)
+    // Mobile keeps the same lighting and post-processing stack as desktop.
+    // Device capability only changes internal resolution, never the art direction.
+    const compactPixelRatioCap = constrainedMobile ? 1.8 : 2.35
+    const compactPixelBudget = constrainedMobile ? 2_200_000 : 3_300_000
+    let runtimeQualityScale = 1
+    const resolvePixelRatio = (width: number, height: number) => {
+      const deviceRatio = window.devicePixelRatio || 1
+      if (!compact) return Math.min(deviceRatio, 1.65)
+      const budgetRatio = Math.sqrt(compactPixelBudget / Math.max(1, width * height))
+      return Math.max(1, Math.min(deviceRatio, compactPixelRatioCap, budgetRatio) * runtimeQualityScale)
+    }
     const pointerNdc = new THREE.Vector2()
     const raycaster = new THREE.Raycaster()
     const startTime = performance.now()
@@ -1461,23 +1475,24 @@ function MechanicalMemoryScene({
     let robotRoot: THREE.Group | null = null
     let assemblyAura: ReturnType<typeof createAssemblyAura> | null = null
     let animatedParts: AnimatedPart[] = []
+    let activePixelRatio = 1
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: !compact,
+      antialias: true,
       alpha: false,
       powerPreference: 'high-performance',
     })
     renderer.setClearColor(0x03080c, 1)
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = compact ? 0.82 : 0.86
-    renderer.shadowMap.enabled = !compact
-    renderer.shadowMap.type = THREE.PCFShadowMap
+    renderer.toneMappingExposure = compact ? 0.9 : 0.86
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x03080c)
-    const sceneFog = new THREE.FogExp2(0x061017, compact ? 0.016 : 0.0125)
+    const sceneFog = new THREE.FogExp2(0x061017, compact ? 0.0135 : 0.0125)
     scene.fog = sceneFog
     scene.add(world)
 
@@ -1504,24 +1519,25 @@ function MechanicalMemoryScene({
       () => undefined,
     )
 
-    scene.add(new THREE.HemisphereLight(0x8bd7e9, 0x16050a, compact ? 0.42 : 0.36))
-    scene.add(new THREE.AmbientLight(0x18323d, compact ? 0.15 : 0.11))
-    const key = new THREE.DirectionalLight(0xd8f8ff, compact ? 1.18 : 1.34)
+    scene.add(new THREE.HemisphereLight(0x8bd7e9, 0x16050a, compact ? 0.38 : 0.36))
+    scene.add(new THREE.AmbientLight(0x18323d, compact ? 0.12 : 0.11))
+    const key = new THREE.DirectionalLight(0xd8f8ff, compact ? 1.3 : 1.34)
     key.position.set(5, 13, 8)
     key.target.position.set(0, -2, 0)
-    key.castShadow = !compact
-    if (!compact) {
-      key.shadow.mapSize.set(1024, 1024)
-      key.shadow.camera.left = -9
-      key.shadow.camera.right = 9
-      key.shadow.camera.top = 10
-      key.shadow.camera.bottom = -10
-      key.shadow.camera.far = 55
-    }
+    key.castShadow = true
+    const shadowMapSize = compact && constrainedMobile ? 512 : 1024
+    key.shadow.mapSize.set(shadowMapSize, shadowMapSize)
+    key.shadow.camera.left = -9
+    key.shadow.camera.right = 9
+    key.shadow.camera.top = 10
+    key.shadow.camera.bottom = -10
+    key.shadow.camera.far = 55
+    key.shadow.bias = -0.00025
+    key.shadow.normalBias = 0.025
     scene.add(key, key.target)
-    const redLight = new THREE.SpotLight(0xff244f, compact ? 52 : 72, 30, Math.PI * 0.28, 0.82, 1.45)
-    const cyanLight = new THREE.SpotLight(0x66e5f1, compact ? 46 : 64, 32, Math.PI * 0.3, 0.86, 1.35)
-    const warmRim = new THREE.PointLight(0xff7b4f, compact ? 8 : 12, 18, 2)
+    const redLight = new THREE.SpotLight(0xff244f, compact ? 66 : 72, 30, Math.PI * 0.28, 0.82, 1.45)
+    const cyanLight = new THREE.SpotLight(0x66e5f1, compact ? 58 : 64, 32, Math.PI * 0.3, 0.86, 1.35)
+    const warmRim = new THREE.PointLight(0xff7b4f, compact ? 10.5 : 12, 18, 2)
     redLight.castShadow = false
     cyanLight.castShadow = false
     scene.add(redLight, redLight.target, cyanLight, cyanLight.target, warmRim)
@@ -1550,15 +1566,28 @@ function MechanicalMemoryScene({
       world.add(card.group)
     })
 
-    const composer = compact ? null : new EffectComposer(renderer)
-    let cinematicPass: ShaderPass | null = null
-    if (composer) {
-      composer.addPass(new RenderPass(scene, camera))
-      composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), 0.27, 0.48, 0.96))
-      cinematicPass = new ShaderPass(CINEMATIC_SHADER)
-      composer.addPass(cinematicPass)
-      composer.addPass(new OutputPass())
+    const composer = new EffectComposer(renderer)
+    if (renderer.capabilities.isWebGL2) {
+      const samples = compact ? 2 : 4
+      composer.renderTarget1.samples = samples
+      composer.renderTarget2.samples = samples
     }
+    composer.addPass(new RenderPass(scene, camera))
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(1, 1),
+      0.27,
+      compact ? 0.46 : 0.48,
+      compact ? 0.98 : 0.96,
+    )
+    composer.addPass(bloomPass)
+    const cinematicPass = new ShaderPass(CINEMATIC_SHADER)
+    if (compact) {
+      cinematicPass.uniforms.uGrain.value = 0.0105
+      cinematicPass.uniforms.uAberration.value = 0.00058
+      cinematicPass.uniforms.uVignette.value = 0.24
+    }
+    composer.addPass(cinematicPass)
+    composer.addPass(new OutputPass())
 
     const loader = new GLTFLoader()
     loader.setMeshoptDecoder(MeshoptDecoder)
@@ -1598,7 +1627,7 @@ function MechanicalMemoryScene({
 
       environment.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return
-        object.receiveShadow = !compact
+        object.receiveShadow = true
         object.castShadow = false
 
         if (object.name.startsWith('BACKBONE_FILAMENT_')) refineEnvironmentMaterial(object, 0.62, undefined, 1.18)
@@ -1621,7 +1650,7 @@ function MechanicalMemoryScene({
       world.add(robotRoot)
       animatedParts = configureRobotAssembly(robot, robotRoot)
       assemblyAura = createAssemblyAura(compact)
-      assemblyAura.material.uniforms.uPixelRatio.value = Math.min(window.devicePixelRatio || 1, compact ? 1.2 : 1.65)
+      assemblyAura.material.uniforms.uPixelRatio.value = activePixelRatio
       robotRoot.add(assemblyAura.points)
       onStatus('ready')
     }).catch((error) => {
@@ -1674,13 +1703,14 @@ function MechanicalMemoryScene({
       const rect = host.getBoundingClientRect()
       const width = Math.max(1, Math.round(rect.width))
       const height = Math.max(1, Math.round(rect.height))
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, compact ? 1.2 : 1.65)
+      const pixelRatio = resolvePixelRatio(width, height)
+      activePixelRatio = pixelRatio
       renderer.setPixelRatio(pixelRatio)
       renderer.setSize(width, height, false)
       composer?.setPixelRatio(pixelRatio)
       composer?.setSize(width, height)
       camera.aspect = width / height
-      camera.fov = compact ? 58 : 46
+      camera.fov = compact ? 54 : 46
       camera.updateProjectionMatrix()
       cloudMaterial.uniforms.uPixelRatio.value = pixelRatio
       particleMaterial.uniforms.uPixelRatio.value = pixelRatio
@@ -1696,12 +1726,30 @@ function MechanicalMemoryScene({
     visibilityObserver.observe(host)
 
     const cardCameraLocal = new THREE.Vector3()
+    let qualityFrames = 0
+    let qualityDuration = 0
+    let previousQualityFrame = performance.now()
+    let adaptiveQualitySettled = !compact
     const render = () => {
       if (cancelled) return
       frame = requestAnimationFrame(render)
       if (!visible) return
 
-      const elapsed = (performance.now() - startTime) / 1000
+      const now = performance.now()
+      const elapsed = (now - startTime) / 1000
+      if (!adaptiveQualitySettled && robotRoot) {
+        if (qualityFrames > 0) qualityDuration += Math.min(50, now - previousQualityFrame)
+        previousQualityFrame = now
+        qualityFrames += 1
+        if (qualityFrames >= 121) {
+          const averageFrameTime = qualityDuration / Math.max(1, qualityFrames - 1)
+          if (averageFrameTime > 24) {
+            runtimeQualityScale = averageFrameTime > 31 ? 0.78 : 0.88
+            resize()
+          }
+          adaptiveQualitySettled = true
+        }
+      }
       const rawProgress = clamp(progress.get())
       // `progress` is already spring-smoothed by Framer Motion. Keep the 3D
       // camera, cards, DOM chapter and robot on the same linear timeline so an
@@ -1747,16 +1795,14 @@ function MechanicalMemoryScene({
       particleMaterial.uniforms.uProgress.value = p
       cloudMaterial.uniforms.uTime.value = reducedMotion ? 0 : elapsed
       cloudMaterial.uniforms.uProgress.value = p
-      if (cinematicPass) {
-        cinematicPass.uniforms.uTime.value = reducedMotion ? 0 : elapsed
-        cinematicPass.uniforms.uProgress.value = p
-      }
+      cinematicPass.uniforms.uTime.value = reducedMotion ? 0 : elapsed
+      cinematicPass.uniforms.uProgress.value = p
       if (robotRoot) {
         const assemblyProgress = reducedMotion ? 1 : rawProgress
         const portalSettle = smoothStep((p - 0.78) / 0.18)
         const platformLift = portalSettle * (compact ? 1.8 : 2.05)
         const robotY = y - (compact ? 1.65 : 1.15) + platformLift
-        const robotScale = THREE.MathUtils.lerp(compact ? 0.78 : 1, compact ? 0.48 : 0.62, portalSettle)
+        const robotScale = THREE.MathUtils.lerp(compact ? 0.82 : 1, compact ? 0.52 : 0.62, portalSettle)
         applyAssembly(animatedParts, assemblyProgress)
         robotRoot.rotation.y = -0.42 + p * Math.PI * 0.72
         robotRoot.position.y = robotY + Math.sin(elapsed * 0.5) * (reducedMotion ? 0 : 0.08)
