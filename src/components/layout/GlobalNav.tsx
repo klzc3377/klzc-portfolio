@@ -75,10 +75,10 @@ export default function GlobalNav({ path, menuOpen, setMenuOpen, navigate }: Glo
           ref={triggerRef}
           className="mobile-menu-trigger"
           type="button"
-          aria-label="Open navigation"
+          aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
           aria-expanded={menuOpen}
           aria-controls="mobile-navigation"
-          onClick={() => setMenuOpen(true)}
+          onClick={() => setMenuOpen(!menuOpen)}
         >
           <Menu size={20} />
         </button>
