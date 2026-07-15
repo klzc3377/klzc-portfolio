@@ -19,7 +19,11 @@ export default {
     }
 
     const accept = request.headers.get('accept') ?? ''
-    if (!accept.includes('text/html')) {
+    const pathname = new URL(request.url).pathname
+    const lastSegment = pathname.split('/').filter(Boolean).at(-1) ?? ''
+    const isDocumentRequest = accept.includes('text/html') || !lastSegment.includes('.')
+
+    if (!isDocumentRequest) {
       return addSecurityHeaders(response)
     }
 

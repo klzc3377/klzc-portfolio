@@ -19,7 +19,7 @@ npm run build
 npm run preview
 ```
 
-生产文件会生成在 `dist/`。站点使用 History API 路由，部署平台需要把未知路径回退到 `index.html`；仓库中的 `vercel.json` 已包含对应配置。
+前端生产文件会生成在 `dist/client/`。站点使用 History API 路由，部署平台需要把未知路径回退到 `index.html`；仓库中的 `vercel.json` 已包含对应配置，Sites 构建会同时生成 `dist/server/index.js` 作为静态资源与 SPA 回退入口。
 
 ## 代码结构
 
