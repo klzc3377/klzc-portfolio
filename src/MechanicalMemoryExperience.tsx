@@ -20,6 +20,7 @@ import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.j
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
 import './MechanicalMemoryExperience.css'
 
 type SceneStatus = 'loading' | 'ready' | 'error'
@@ -41,16 +42,28 @@ type MemoryEntry = {
   destination: string
 }
 
-type AnimatedPart = {
-  object: THREE.Mesh
+type AnimatedPartBase = {
   finalPosition: THREE.Vector3
   finalQuaternion: THREE.Quaternion
   startPosition: THREE.Vector3
   startQuaternion: THREE.Quaternion
   arcOffset: THREE.Vector3
+  currentPosition: THREE.Vector3
+  currentQuaternion: THREE.Quaternion
   startAt: number
   duration: number
 }
+
+type AnimatedPart = AnimatedPartBase & (
+  | { kind: 'mesh'; object: THREE.Mesh }
+  | {
+    kind: 'batch'
+    batch: THREE.BatchedMesh
+    instanceId: number
+    finalScale: THREE.Vector3
+    matrix: THREE.Matrix4
+  }
+)
 
 type CardVisual = {
   group: THREE.Group
@@ -257,9 +270,11 @@ function disposeObject(root: THREE.Object3D) {
   const geometries = new Set<THREE.BufferGeometry>()
   const materials = new Set<THREE.Material>()
   const textures = new Set<THREE.Texture>()
+  const batchedMeshes = new Set<THREE.BatchedMesh>()
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh || object instanceof THREE.Points)) return
-    if (object.geometry) geometries.add(object.geometry)
+    if (object instanceof THREE.BatchedMesh) batchedMeshes.add(object)
+    else if (object.geometry) geometries.add(object.geometry)
     const meshMaterials = Array.isArray(object.material) ? object.material : [object.material]
     meshMaterials.forEach((material) => {
       if (!material) return
@@ -269,12 +284,13 @@ function disposeObject(root: THREE.Object3D) {
       })
     })
   })
+  batchedMeshes.forEach((batch) => batch.dispose())
   textures.forEach((texture) => texture.dispose())
   materials.forEach((material) => material.dispose())
   geometries.forEach((geometry) => geometry.dispose())
 }
 
-function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group) {
+function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group, compact: boolean) {
   // The source assembly's physical base is inverted relative to the glTF's
   // authored screen orientation, so turn it over before normalizing the model.
   model.rotation.z = Math.PI
@@ -295,6 +311,7 @@ function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group) {
   host.updateMatrixWorld(true)
 
   const meshes: THREE.Mesh[] = []
+  const materialIndices = new Map<THREE.Mesh, number>()
   const robotMaterialSpecs = [
     { color: 0x651427, metalness: 0.56, roughness: 0.34, sheen: 0xff6685 },
     { color: 0x0e3a34, metalness: 0.58, roughness: 0.36, sheen: 0x63ded4 },
@@ -332,8 +349,9 @@ function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group) {
               ? 4
               : 5
     object.material = robotMaterials[materialIndex]
-    object.castShadow = index % 4 === 0
+    object.castShadow = compact ? false : index % 4 === 0
     object.receiveShadow = true
+    materialIndices.set(object, materialIndex)
     meshes.push(object)
   })
 
@@ -360,6 +378,139 @@ function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group) {
     })
 
   const hostWorldInverse = host.matrixWorld.clone().invert()
+
+  if (compact) {
+    type BatchEntry = {
+      object: THREE.Mesh
+      index: number
+      finalMatrix: THREE.Matrix4
+      finalPosition: THREE.Vector3
+      finalQuaternion: THREE.Quaternion
+      finalScale: THREE.Vector3
+      startPosition: THREE.Vector3
+      startQuaternion: THREE.Quaternion
+      arcOffset: THREE.Vector3
+      startAt: number
+      duration: number
+      castsShadow: boolean
+      materialIndex: number
+    }
+
+    const batchEntries = meshes.map((object, index): BatchEntry => {
+      const angle = index * 2.399963229728653
+      const distance = 3 + seededNoise(index + 31) * 5.3
+      const rise = 4.5 + seededNoise(index + 47) * 11
+      const finalMatrix = hostWorldInverse.clone().multiply(object.matrixWorld)
+      const finalPosition = new THREE.Vector3()
+      const finalQuaternion = new THREE.Quaternion()
+      const finalScale = new THREE.Vector3()
+      finalMatrix.decompose(finalPosition, finalQuaternion, finalScale)
+      const startQuaternion = finalQuaternion.clone().multiply(
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(
+          (seededNoise(index + 71) - 0.5) * 3.1,
+          (seededNoise(index + 83) - 0.5) * 3.6,
+          (seededNoise(index + 97) - 0.5) * 2.8,
+        )),
+      )
+      const sizeRank = sizeRanks.get(object) ?? 0
+      const order = assemblyOrder.get(object) ?? 0
+      const startAt = THREE.MathUtils.clamp(
+        0.004 + order * 0.87 - sizeRank * 0.075 + (1 - sizeRank) * 0.018,
+        0.004,
+        0.88,
+      )
+      const duration = Math.min(
+        0.075 + seededNoise(index + 127) * 0.055,
+        1 - startAt,
+      )
+      const arcStrength = 0.65 + seededNoise(index + 173) * 1.9
+      return {
+        object,
+        index,
+        finalMatrix,
+        finalPosition,
+        finalQuaternion,
+        finalScale,
+        startPosition: finalPosition.clone().add(new THREE.Vector3(
+          Math.cos(angle) * distance,
+          rise,
+          Math.sin(angle) * distance,
+        )),
+        startQuaternion,
+        arcOffset: new THREE.Vector3(
+          Math.cos(angle + Math.PI / 2) * arcStrength,
+          seededNoise(index + 197) * 0.85,
+          Math.sin(angle + Math.PI / 2) * arcStrength,
+        ),
+        startAt,
+        duration,
+        castsShadow: sizeRank >= 0.955,
+        materialIndex: materialIndices.get(object) ?? 5,
+      }
+    })
+
+    const groupedEntries = new Map<string, BatchEntry[]>()
+    batchEntries.forEach((entry) => {
+      const key = `${entry.materialIndex}:${entry.castsShadow ? 1 : 0}`
+      const group = groupedEntries.get(key)
+      if (group) group.push(entry)
+      else groupedEntries.set(key, [entry])
+    })
+
+    const batches: THREE.BatchedMesh[] = []
+    const batchedParts: AnimatedPart[] = []
+    try {
+      groupedEntries.forEach((entries) => {
+        const totalVertices = entries.reduce(
+          (sum, entry) => sum + entry.object.geometry.getAttribute('position').count,
+          0,
+        )
+        const totalIndices = entries.reduce(
+          (sum, entry) => sum + (entry.object.geometry.index?.count ?? 0),
+          0,
+        )
+        const material = robotMaterials[entries[0].materialIndex]
+        const batch = new THREE.BatchedMesh(entries.length, totalVertices, totalIndices, material)
+        batch.castShadow = entries[0].castsShadow
+        batch.receiveShadow = true
+        batch.frustumCulled = false
+        batch.perObjectFrustumCulled = true
+        batch.sortObjects = false
+        batches.push(batch)
+
+        entries.forEach((entry) => {
+          const geometryId = batch.addGeometry(entry.object.geometry)
+          const instanceId = batch.addInstance(geometryId)
+          batch.setMatrixAt(instanceId, entry.finalMatrix)
+          batchedParts.push({
+            kind: 'batch',
+            batch,
+            instanceId,
+            finalPosition: entry.finalPosition,
+            finalQuaternion: entry.finalQuaternion,
+            finalScale: entry.finalScale,
+            startPosition: entry.startPosition,
+            startQuaternion: entry.startQuaternion,
+            arcOffset: entry.arcOffset,
+            currentPosition: entry.finalPosition.clone(),
+            currentQuaternion: entry.finalQuaternion.clone(),
+            matrix: new THREE.Matrix4(),
+            startAt: entry.startAt,
+            duration: entry.duration,
+          })
+        })
+      })
+
+      host.remove(normalizer)
+      batches.forEach((batch) => host.add(batch))
+      const sourceGeometries = new Set(meshes.map((mesh) => mesh.geometry))
+      sourceGeometries.forEach((geometry) => geometry.dispose())
+      return batchedParts
+    } catch (error) {
+      console.warn('Falling back to individual robot meshes', error)
+      batches.forEach((batch) => batch.dispose())
+    }
+  }
 
   return meshes.map((object, index) => {
     const angle = index * 2.399963229728653
@@ -402,12 +553,15 @@ function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group) {
       Math.sin(angle + Math.PI / 2) * arcStrength,
     ).applyMatrix3(hostToParentLinear)
     return {
+      kind: 'mesh' as const,
       object,
       finalPosition,
       finalQuaternion,
       startPosition: finalPosition.clone().add(localOffset),
       startQuaternion,
       arcOffset,
+      currentPosition: finalPosition.clone(),
+      currentQuaternion: finalQuaternion.clone(),
       startAt,
       duration,
     }
@@ -421,9 +575,18 @@ function applyAssembly(parts: AnimatedPart[], progress: number) {
     // the sideways arc prevents the motion from reading as a flat crossfade.
     const descent = 1 - Math.pow(1 - local, 2.35)
     const arc = Math.sin(local * Math.PI) * (1 - local * 0.35)
-    part.object.position.lerpVectors(part.startPosition, part.finalPosition, descent)
-    part.object.position.addScaledVector(part.arcOffset, arc)
-    part.object.quaternion.slerpQuaternions(part.startQuaternion, part.finalQuaternion, local)
+    part.currentPosition.lerpVectors(part.startPosition, part.finalPosition, descent)
+    part.currentPosition.addScaledVector(part.arcOffset, arc)
+    part.currentQuaternion.slerpQuaternions(part.startQuaternion, part.finalQuaternion, local)
+    if (part.kind === 'mesh') {
+      part.object.position.copy(part.currentPosition)
+      part.object.quaternion.copy(part.currentQuaternion)
+    } else {
+      part.batch.setMatrixAt(
+        part.instanceId,
+        part.matrix.compose(part.currentPosition, part.currentQuaternion, part.finalScale),
+      )
+    }
   })
 }
 
@@ -431,7 +594,7 @@ function createParticles(compact: boolean) {
   // Build a layered, soft-focus dust volume instead of a uniform star field.
   // The dense knots sit behind the helix and give the scene the iridescent,
   // photographic depth of the reference without competing with the cards.
-  const count = compact ? 6000 : 11000
+  const count = compact ? 4200 : 11000
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
@@ -494,6 +657,13 @@ function createParticles(compact: boolean) {
         : clustered
           ? 0.14 + seededNoise(index + 541) * 0.23
           : 0.03 + seededNoise(index + 541) * 0.06
+  }
+
+  if (compact) {
+    for (let index = 0; index < count; index += 1) {
+      sizes[index] *= 1.12
+      alphas[index] *= 1.1
+    }
   }
 
   const geometry = new THREE.BufferGeometry()
@@ -564,7 +734,7 @@ function createParticles(compact: boolean) {
 function createVolumetricClouds(compact: boolean) {
   // A small number of broad, irregular veils supplies the missing mid-frequency
   // detail between the tiny dust and the large mechanical silhouette.
-  const count = compact ? 60 : 72
+  const count = compact ? 40 : 72
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
@@ -597,6 +767,13 @@ function createVolumetricClouds(compact: boolean) {
     seeds[index] = seed
     sizes[index] = 10 + seededNoise(index + 1877) * 18
     alphas[index] = 0.022 + seededNoise(index + 1889) * 0.032
+  }
+
+  if (compact) {
+    for (let index = 0; index < count; index += 1) {
+      sizes[index] *= 1.2
+      alphas[index] *= 1.16
+    }
   }
 
   const geometry = new THREE.BufferGeometry()
@@ -668,7 +845,7 @@ function createVolumetricClouds(compact: boolean) {
 }
 
 function createAssemblyAura(compact: boolean) {
-  const count = compact ? 1800 : 2400
+  const count = compact ? 1300 : 2400
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
@@ -699,6 +876,13 @@ function createAssemblyAura(compact: boolean) {
     alphas[index] = haze
       ? 0.018 + seededNoise(index + 1459) * 0.032
       : 0.1 + seededNoise(index + 1459) * 0.21
+  }
+
+  if (compact) {
+    for (let index = 0; index < count; index += 1) {
+      sizes[index] *= 1.14
+      alphas[index] *= 1.1
+    }
   }
 
   const geometry = new THREE.BufferGeometry()
@@ -1161,7 +1345,7 @@ function createCardVisual(
       edgeMaterial,
     )
     rail.position.set(0, railY * (height * 0.5 + 0.075), -depth * 0.1)
-    rail.castShadow = true
+    rail.castShadow = !compact
     group.add(rail)
   }
   for (const railX of [-1, 1]) {
@@ -1170,7 +1354,7 @@ function createCardVisual(
       edgeMaterial,
     )
     rail.position.set(railX * (width * 0.5 + 0.09), 0, -depth * 0.1)
-    rail.castShadow = true
+    rail.castShadow = !compact
     group.add(rail)
   }
 
@@ -1457,11 +1641,12 @@ function MechanicalMemoryScene({
     const hardwareThreads = navigator.hardwareConcurrency || 6
     const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4
     const constrainedMobile = compact && (hardwareThreads <= 4 || deviceMemory <= 2)
-    // Mobile keeps the same lighting and post-processing stack as desktop.
-    // Device capability only changes internal resolution, never the art direction.
-    const compactPixelRatioCap = constrainedMobile ? 1.8 : 2.35
-    const compactPixelBudget = constrainedMobile ? 2_200_000 : 3_300_000
-    let runtimeQualityScale = 1
+    // Mobile keeps the same lighting and post-processing stack as desktop,
+    // while its internal resolution can continuously follow the GPU budget.
+    const compactPixelRatioCap = constrainedMobile ? 1.65 : 2.1
+    const compactPixelBudget = constrainedMobile ? 1_600_000 : 2_500_000
+    const minimumQualityScale = constrainedMobile ? 0.7 : 0.72
+    let runtimeQualityScale = compact ? (constrainedMobile ? 0.86 : 0.9) : 1
     const resolvePixelRatio = (width: number, height: number) => {
       const deviceRatio = window.devicePixelRatio || 1
       if (!compact) return Math.min(deviceRatio, 1.65)
@@ -1480,7 +1665,7 @@ function MechanicalMemoryScene({
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: !compact,
       alpha: false,
       powerPreference: 'high-performance',
     })
@@ -1490,6 +1675,7 @@ function MechanicalMemoryScene({
     renderer.toneMappingExposure = compact ? 0.9 : 0.86
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    renderer.shadowMap.autoUpdate = !compact
 
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x03080c)
@@ -1526,7 +1712,7 @@ function MechanicalMemoryScene({
     key.position.set(5, 13, 8)
     key.target.position.set(0, -2, 0)
     key.castShadow = true
-    const shadowMapSize = compact && constrainedMobile ? 512 : 1024
+    const shadowMapSize = compact ? 512 : 1024
     key.shadow.mapSize.set(shadowMapSize, shadowMapSize)
     key.shadow.camera.left = -9
     key.shadow.camera.right = 9
@@ -1568,10 +1754,9 @@ function MechanicalMemoryScene({
     })
 
     const composer = new EffectComposer(renderer)
-    if (renderer.capabilities.isWebGL2) {
-      const samples = compact ? 2 : 4
-      composer.renderTarget1.samples = samples
-      composer.renderTarget2.samples = samples
+    if (!compact && renderer.capabilities.isWebGL2) {
+      composer.renderTarget1.samples = 4
+      composer.renderTarget2.samples = 4
     }
     composer.addPass(new RenderPass(scene, camera))
     const bloomPass = new UnrealBloomPass(
@@ -1588,6 +1773,8 @@ function MechanicalMemoryScene({
       cinematicPass.uniforms.uVignette.value = 0.24
     }
     composer.addPass(cinematicPass)
+    const fxaaPass = compact ? new ShaderPass(FXAAShader) : null
+    if (fxaaPass) composer.addPass(fxaaPass)
     composer.addPass(new OutputPass())
 
     const loader = new GLTFLoader()
@@ -1649,7 +1836,7 @@ function MechanicalMemoryScene({
       world.add(environment)
       robotRoot = new THREE.Group()
       world.add(robotRoot)
-      animatedParts = configureRobotAssembly(robot, robotRoot)
+      animatedParts = configureRobotAssembly(robot, robotRoot, compact)
       assemblyAura = createAssemblyAura(compact)
       assemblyAura.material.uniforms.uPixelRatio.value = activePixelRatio
       robotRoot.add(assemblyAura.points)
@@ -1696,8 +1883,10 @@ function MechanicalMemoryScene({
       const card = findCardAtPointer(event)
       if (card) onNavigate(card.destination)
     }
-    canvas.addEventListener('pointermove', onCardPointerMove, { passive: true })
-    canvas.addEventListener('pointerleave', onCardPointerLeave)
+    if (!compact) {
+      canvas.addEventListener('pointermove', onCardPointerMove, { passive: true })
+      canvas.addEventListener('pointerleave', onCardPointerLeave)
+    }
     canvas.addEventListener('click', onCardClick)
 
     const resize = () => {
@@ -1710,6 +1899,12 @@ function MechanicalMemoryScene({
       renderer.setSize(width, height, false)
       composer?.setPixelRatio(pixelRatio)
       composer?.setSize(width, height)
+      if (fxaaPass) {
+        fxaaPass.uniforms.resolution.value.set(
+          1 / Math.max(1, width * pixelRatio),
+          1 / Math.max(1, height * pixelRatio),
+        )
+      }
       camera.aspect = width / height
       camera.fov = compact ? 54 : 46
       camera.updateProjectionMatrix()
@@ -1721,34 +1916,62 @@ function MechanicalMemoryScene({
     resizeObserver.observe(host)
     resize()
 
-    const visibilityObserver = new IntersectionObserver(([entry]) => {
-      visible = Boolean(entry?.isIntersecting)
-    }, { threshold: 0.01 })
-    visibilityObserver.observe(host)
-
     const cardCameraLocal = new THREE.Vector3()
     let qualityFrames = 0
     let qualityDuration = 0
     let previousQualityFrame = performance.now()
-    let adaptiveQualitySettled = !compact
+    let qualityCooldownFrames = 0
+    let nextRenderAt = performance.now()
+    let shadowFrame = 0
+    let lastAssemblyProgress = -1
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
+      visible = Boolean(entry?.isIntersecting)
+      if (visible) {
+        const now = performance.now()
+        nextRenderAt = now
+        previousQualityFrame = now
+        qualityFrames = 0
+        qualityDuration = 0
+      }
+    }, { threshold: 0.01 })
+    visibilityObserver.observe(host)
+
     const render = () => {
       if (cancelled) return
       frame = requestAnimationFrame(render)
       if (!visible) return
 
       const now = performance.now()
+      if (compact && now + 0.75 < nextRenderAt) return
+      if (compact) {
+        const renderStep = 1000 / 60
+        nextRenderAt = now > nextRenderAt + 100 ? now + renderStep : nextRenderAt + renderStep
+      }
       const elapsed = (now - startTime) / 1000
-      if (!adaptiveQualitySettled && robotRoot) {
-        if (qualityFrames > 0) qualityDuration += Math.min(50, now - previousQualityFrame)
-        previousQualityFrame = now
-        qualityFrames += 1
-        if (qualityFrames >= 121) {
+      if (compact && robotRoot) {
+        if (qualityCooldownFrames > 0) {
+          qualityCooldownFrames -= 1
+          previousQualityFrame = now
+        } else {
+          if (qualityFrames > 0) qualityDuration += Math.min(50, now - previousQualityFrame)
+          previousQualityFrame = now
+          qualityFrames += 1
+        }
+        if (qualityFrames >= 90) {
           const averageFrameTime = qualityDuration / Math.max(1, qualityFrames - 1)
-          if (averageFrameTime > 24) {
-            runtimeQualityScale = averageFrameTime > 31 ? 0.78 : 0.88
+          let nextQualityScale = runtimeQualityScale
+          if (averageFrameTime > 25) nextQualityScale -= 0.1
+          else if (averageFrameTime > 19.5) nextQualityScale -= 0.05
+          else if (averageFrameTime < 16.2) nextQualityScale += 0.03
+          nextQualityScale = THREE.MathUtils.clamp(nextQualityScale, minimumQualityScale, 1)
+          if (Math.abs(nextQualityScale - runtimeQualityScale) > 0.005) {
+            runtimeQualityScale = nextQualityScale
             resize()
+            qualityCooldownFrames = 45
           }
-          adaptiveQualitySettled = true
+          qualityFrames = 0
+          qualityDuration = 0
+          previousQualityFrame = now
         }
       }
       const rawProgress = clamp(progress.get())
@@ -1804,7 +2027,10 @@ function MechanicalMemoryScene({
         const platformLift = portalSettle * (compact ? 1.8 : 2.05)
         const robotY = y - (compact ? 1.65 : 1.15) + platformLift
         const robotScale = THREE.MathUtils.lerp(compact ? 0.82 : 1, compact ? 0.52 : 0.62, portalSettle)
-        applyAssembly(animatedParts, assemblyProgress)
+        if (Math.abs(assemblyProgress - lastAssemblyProgress) > 0.00005) {
+          applyAssembly(animatedParts, assemblyProgress)
+          lastAssemblyProgress = assemblyProgress
+        }
         robotRoot.rotation.y = -0.42 + p * Math.PI * 0.72
         robotRoot.position.y = robotY + Math.sin(elapsed * 0.5) * (reducedMotion ? 0 : 0.08)
         robotRoot.scale.setScalar(robotScale)
@@ -1839,6 +2065,10 @@ function MechanicalMemoryScene({
         }
       })
 
+      if (compact) {
+        renderer.shadowMap.needsUpdate = shadowFrame % 2 === 0
+        shadowFrame += 1
+      }
       if (composer) composer.render()
       else renderer.render(scene, camera)
     }
