@@ -10,6 +10,7 @@ import { projects } from './data/portfolio'
 import type { Award, Navigate, RoutePath } from './types/portfolio'
 import './App.css'
 import './styles/production.css'
+import './styles/cinematic-polish.css'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const AtlasPage = lazy(() => import('./AtlasPage'))

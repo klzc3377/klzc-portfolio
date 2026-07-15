@@ -787,3 +787,149 @@
     transition: none;
   }
 }
+
+/* Final cinematic art direction. Kept in this lazy-loaded stylesheet so it wins
+   after the route chunk is attached. */
+.mechanical-memory {
+  --memory-display: "Barlow Condensed", "Noto Sans SC Variable", "Microsoft YaHei UI", sans-serif;
+}
+
+.mechanical-memory .mechanical-memory__intro > p::before,
+.mechanical-memory .mechanical-memory__intro > div::before,
+.mechanical-memory .mechanical-memory__loading i::after {
+  background: #d7a15b;
+  box-shadow: 0 0 20px rgba(215, 161, 91, 0.46);
+}
+
+.mechanical-memory .mechanical-memory__intro h1 span:first-child,
+.mechanical-memory .mechanical-memory__end h2 {
+  color: #f3f0e9;
+}
+
+.mechanical-memory .mechanical-memory__intro h1 span:last-child {
+  -webkit-text-stroke-color: rgba(241, 239, 231, 0.66);
+}
+
+.mechanical-memory .mechanical-memory__intro > div {
+  color: rgba(237, 236, 229, 0.78);
+}
+
+.mechanical-memory .mechanical-memory__rail > span,
+.mechanical-memory .mechanical-memory__rail button.is-active,
+.mechanical-memory .mechanical-memory__end > p {
+  color: #f0c47d;
+}
+
+.mechanical-memory .mechanical-memory__chapter article {
+  border-left-color: rgba(215, 161, 91, 0.48);
+  background: linear-gradient(100deg, rgba(4, 8, 10, 0.78), rgba(4, 8, 10, 0.44) 72%, rgba(4, 8, 10, 0.12));
+}
+
+.mechanical-memory .mechanical-memory__chapter article > a:hover,
+.mechanical-memory .mechanical-memory__chapter article > a:focus-visible {
+  border-color: rgba(215, 161, 91, 0.68);
+  background: rgba(91, 61, 30, 0.36);
+}
+
+.mechanical-memory .mechanical-memory__end a:first-child {
+  border-color: rgba(215, 161, 91, 0.62);
+  background: rgba(94, 60, 27, 0.52);
+}
+
+.mechanical-memory .mechanical-memory__primary-action svg {
+  color: #f0c47d;
+}
+
+.mechanical-memory .mechanical-memory__quick-links {
+  border-color: rgba(207, 222, 218, 0.2);
+  background:
+    linear-gradient(110deg, rgba(130, 209, 208, 0.035), transparent 44%),
+    rgba(3, 7, 9, 0.76);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(24px) saturate(1.08);
+}
+
+.mechanical-memory .mechanical-memory__quick-links a:hover,
+.mechanical-memory .mechanical-memory__quick-links button:hover,
+.mechanical-memory .mechanical-memory__quick-links a:focus-visible,
+.mechanical-memory .mechanical-memory__quick-links button:focus-visible {
+  background: rgba(215, 161, 91, 0.09);
+}
+
+.mechanical-memory .mechanical-memory__quick-links small {
+  color: rgba(214, 222, 216, 0.46);
+}
+
+@media (max-width: 600px) {
+  .mechanical-memory .mechanical-memory__quick-links {
+    display: none;
+  }
+
+  .mechanical-memory .mechanical-memory__intro {
+    top: 124px;
+    left: 20px;
+    width: calc(100% - 54px);
+  }
+
+  .mechanical-memory .mechanical-memory__intro > p {
+    margin-bottom: 18px;
+    color: rgba(230, 232, 225, 0.66);
+    font-size: 8.5px;
+    letter-spacing: 0.13em;
+  }
+
+  .mechanical-memory .mechanical-memory__intro h1 {
+    font-size: clamp(56px, 17vw, 72px);
+    line-height: 0.79;
+  }
+
+  .mechanical-memory .mechanical-memory__intro > div {
+    max-width: calc(100% - 8px);
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: 66px minmax(0, 1fr);
+    gap: 12px;
+    padding-left: 15px;
+    position: relative;
+    color: rgba(239, 237, 230, 0.8);
+    font-size: 10px;
+    line-height: 1.62;
+    letter-spacing: 0.045em;
+  }
+
+  .mechanical-memory .mechanical-memory__intro > div::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 44px;
+  }
+
+  .mechanical-memory .mechanical-memory__intro strong {
+    font-size: 9px;
+  }
+
+  .mechanical-memory .mechanical-memory__rail {
+    right: 2px;
+    width: 30px;
+    gap: 7px;
+  }
+
+  .mechanical-memory .mechanical-memory__rail > div {
+    gap: 5px;
+  }
+
+  .mechanical-memory .mechanical-memory__rail button {
+    width: 27px;
+    height: 22px;
+    gap: 4px;
+    font-size: 7px;
+  }
+
+  .mechanical-memory .mechanical-memory__rail button::before {
+    width: 7px;
+  }
+
+  .mechanical-memory .mechanical-memory__rail button.is-active::before {
+    width: 14px;
+  }
+}

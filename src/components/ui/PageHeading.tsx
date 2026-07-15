@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 
 type PageHeadingProps = {
   chapter?: string
@@ -10,6 +10,10 @@ type PageHeadingProps = {
 }
 
 export default function PageHeading({ chapter, label, title, en, copy, copyEn }: PageHeadingProps) {
+  const reducedMotion = useReducedMotion()
+  const titleInitial = reducedMotion ? { opacity: 1 } : { opacity: 0, y: 24, filter: 'blur(7px)' }
+  const copyInitial = reducedMotion ? { opacity: 1 } : { opacity: 0, y: 16, filter: 'blur(5px)' }
+
   return (
     <header className="page-heading">
       {chapter ? (
@@ -19,28 +23,33 @@ export default function PageHeading({ chapter, label, title, en, copy, copyEn }:
           <em>/ 05 · Chapter</em>
         </div>
       ) : null}
-      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="eyebrow">
+      <motion.p
+        initial={reducedMotion ? { opacity: 1 } : { opacity: 0, x: -12 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: reducedMotion ? 0 : 0.55, ease: [0.16, 1, 0.3, 1] }}
+        className="eyebrow"
+      >
         {label}
       </motion.p>
       <motion.h1
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={titleInitial}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: reducedMotion ? 0 : 0.72, ease: [0.16, 1, 0.3, 1] }}
       >
         {title}
       </motion.h1>
       <motion.h2
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.06 }}
+        initial={copyInitial}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: reducedMotion ? 0 : 0.68, delay: reducedMotion ? 0 : 0.08, ease: [0.16, 1, 0.3, 1] }}
       >
         {en}
       </motion.h2>
       <motion.div
         className="page-intro"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.11 }}
+        initial={copyInitial}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ duration: reducedMotion ? 0 : 0.68, delay: reducedMotion ? 0 : 0.14, ease: [0.16, 1, 0.3, 1] }}
       >
         <p>{copy}</p>
         {copyEn ? <p className="en-copy">{copyEn}</p> : null}

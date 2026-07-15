@@ -984,11 +984,11 @@
   --atlas-muted: rgba(218, 233, 237, 0.62);
   --atlas-quiet: rgba(210, 229, 233, 0.4);
   --atlas-silver: #b7d6dd;
-  --atlas-accent: #ff2b3d;
+  --atlas-accent: var(--cinema-amber, #d7a15b);
   position: relative;
   background:
     radial-gradient(circle at 18% 16%, rgba(24, 126, 143, 0.1), transparent 28%),
-    radial-gradient(circle at 88% 42%, rgba(153, 12, 38, 0.1), transparent 32%),
+    radial-gradient(circle at 88% 42%, rgba(215, 161, 91, 0.09), transparent 32%),
     var(--atlas-bg);
   font-family: var(--sans);
 }
@@ -1020,7 +1020,7 @@
   bottom: -1px;
   width: 38%;
   height: 1px;
-  background: linear-gradient(90deg, #ff2b3d, #7fe2ef, transparent);
+  background: linear-gradient(90deg, var(--atlas-accent), #7fe2ef, transparent);
   box-shadow: 0 0 18px rgba(127, 226, 239, 0.22);
 }
 
@@ -1072,8 +1072,8 @@
 .atlas-reset:focus-visible {
   color: #fff;
   border-color: var(--atlas-accent);
-  background: rgba(255, 43, 61, 0.07);
-  box-shadow: 0 0 28px rgba(255, 43, 61, 0.12);
+  background: rgba(215, 161, 91, 0.08);
+  box-shadow: 0 0 28px rgba(215, 161, 91, 0.13);
 }
 
 .atlas-layout {
@@ -1091,7 +1091,7 @@
   background:
     radial-gradient(circle at 50% 48%, transparent 42%, rgba(2, 5, 8, 0.72) 100%),
     repeating-linear-gradient(0deg, transparent 0 58px, rgba(127, 226, 239, 0.023) 59px),
-    repeating-linear-gradient(90deg, transparent 0 78px, rgba(255, 43, 61, 0.018) 79px);
+    repeating-linear-gradient(90deg, transparent 0 78px, rgba(215, 161, 91, 0.018) 79px);
 }
 
 .atlas-map-status {
@@ -1104,7 +1104,7 @@
   border-color: rgba(127, 226, 239, 0.18);
   border-radius: 3px;
   background:
-    linear-gradient(90deg, rgba(255, 43, 61, 0.1), transparent 44%),
+    linear-gradient(90deg, rgba(215, 161, 91, 0.1), transparent 44%),
     rgba(2, 8, 11, 0.78);
   box-shadow: 0 18px 38px rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(16px);
@@ -1123,7 +1123,7 @@
   overflow-y: auto;
   gap: 24px;
   background:
-    radial-gradient(circle at 100% 12%, rgba(255, 43, 61, 0.1), transparent 28%),
+    radial-gradient(circle at 100% 12%, rgba(215, 161, 91, 0.1), transparent 28%),
     radial-gradient(circle at 0 82%, rgba(127, 226, 239, 0.075), transparent 28%),
     rgba(3, 8, 12, 0.91);
   backdrop-filter: blur(22px);
@@ -1185,7 +1185,7 @@
 .atlas-index-item:hover,
 .atlas-index-item:focus-visible,
 .atlas-index-item.is-active {
-  background: linear-gradient(90deg, rgba(127, 226, 239, 0.055), rgba(255, 43, 61, 0.035));
+  background: linear-gradient(90deg, rgba(127, 226, 239, 0.055), rgba(215, 161, 91, 0.045));
 }
 
 .atlas-next-chapter {

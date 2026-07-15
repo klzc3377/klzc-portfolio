@@ -5,6 +5,7 @@ import '@fontsource/barlow-condensed/latin-600.css'
 import '@fontsource/barlow-condensed/latin-700.css'
 import '@fontsource/ibm-plex-mono/latin-400.css'
 import '@fontsource/ibm-plex-mono/latin-500.css'
+import '@fontsource-variable/noto-sans-sc/wght.css'
 import './index.css'
 import App from './App.tsx'
 
