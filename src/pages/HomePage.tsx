@@ -6,7 +6,7 @@ const MechanicalMemoryExperience = lazy(() => import('../MechanicalMemoryExperie
 export default function HomePage({ navigate }: { navigate: Navigate }) {
   return (
     <div className="home-page">
-      <Suspense fallback={<div className="memory-tunnel-route-fallback" role="status" aria-label="Loading spatial archive" />}>
+      <Suspense fallback={<div className="memory-tunnel-route-fallback" role="status" aria-label="正在载入空间档案 / Loading spatial archive" />}>
         <MechanicalMemoryExperience navigate={navigate} />
       </Suspense>
     </div>

@@ -1,6 +1,21 @@
 import type { MouseEvent, ReactNode } from 'react'
 import type { Navigate } from '../../types/portfolio'
 
+const prefetchedRoutes = new Set<string>()
+
+function prefetchRoute(href: string) {
+  const route = href.split('#')[0] || '/'
+  if (prefetchedRoutes.has(route)) return
+  prefetchedRoutes.add(route)
+  if (route === '/') void import('../../pages/HomePage')
+  else if (route === '/atlas') void import('../../AtlasPage')
+  else if (route === '/robotics') void import('../../pages/RoboticsPage')
+  else if (route === '/awards') void import('../../pages/AwardsPage')
+  else if (route === '/projects') void import('../../pages/ProjectsPage')
+  else if (route === '/profile') void import('../../pages/ProfilePage')
+  else if (route.startsWith('/projects/')) void import('../../pages/ProjectDetailPage')
+}
+
 type RouteLinkProps = {
   href: string
   navigate: Navigate
@@ -17,7 +32,15 @@ export default function RouteLink({ href, navigate, className, ariaLabel, childr
   }
 
   return (
-    <a href={href} className={className} aria-label={ariaLabel} onClick={onClick}>
+    <a
+      href={href}
+      className={className}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      onPointerEnter={() => prefetchRoute(href)}
+      onFocus={() => prefetchRoute(href)}
+      onTouchStart={() => prefetchRoute(href)}
+    >
       {children}
     </a>
   )

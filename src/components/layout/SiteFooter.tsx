@@ -5,11 +5,11 @@ export default function SiteFooter({ navigate }: { navigate: Navigate }) {
   return (
     <footer className="site-footer">
       <span>KLzc / Cheng Zhang</span>
-      <nav aria-label="Footer navigation">
-        <RouteLink href="/projects" navigate={navigate}>Selected work / 项目</RouteLink>
-        <RouteLink href="/profile" navigate={navigate}>Profile / 现在</RouteLink>
+      <nav aria-label="页脚导航 / Footer navigation">
+        <RouteLink href="/projects" navigate={navigate}>精选项目 / Selected work</RouteLink>
+        <RouteLink href="/profile" navigate={navigate}>关于我 / Profile</RouteLink>
       </nav>
-      <a href="mailto:masterzc624@gmail.com">masterzc624@gmail.com</a>
+      <a href="mailto:masterzc624@gmail.com"><span>联系我 / Contact</span><small>masterzc624@gmail.com</small></a>
     </footer>
   )
 }

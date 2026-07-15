@@ -10,6 +10,8 @@ type ChapterBridgeProps = {
   href: string
   navigate: Navigate
   kicker?: string
+  actionZh?: string
+  actionEn?: string
 }
 
 export default function ChapterBridge({
@@ -18,7 +20,9 @@ export default function ChapterBridge({
   en,
   href,
   navigate,
-  kicker = 'Next chapter / 下一章',
+  kicker = '下一章 / Next chapter',
+  actionZh = '继续阅读',
+  actionEn = 'Continue',
 }: ChapterBridgeProps) {
   return (
     <Reveal className="chapter-bridge">
@@ -29,7 +33,7 @@ export default function ChapterBridge({
         <span>{en}</span>
       </div>
       <RouteLink href={href} navigate={navigate} className="chapter-bridge__action">
-        <span>Continue</span>
+        <span>{actionZh}<small>{actionEn}</small></span>
         <ArrowRight size={20} />
       </RouteLink>
     </Reveal>

@@ -7,6 +7,7 @@ import {
   useTransform,
   type MotionValue,
 } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import * as THREE from 'three'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -1906,7 +1907,7 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
   }
 
   return (
-    <section ref={sectionRef} className={`mechanical-memory mechanical-memory--${status}`} aria-label="KLZC mechanical memory archive">
+    <section ref={sectionRef} className={`mechanical-memory mechanical-memory--${status}`} aria-label="KLZC 机械记忆档案 / Mechanical memory archive">
       <div className="mechanical-memory__sticky">
         <MechanicalMemoryScene
           progress={progress}
@@ -1916,10 +1917,10 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
         />
         <div className="mechanical-memory__shade" aria-hidden="true" />
 
-        <nav className="mechanical-memory__quick-links" aria-label="Featured navigation">
-          <a href="/projects" onClick={(event) => routeTo(event, '/projects')}>Work</a>
-          <a href="/profile" onClick={(event) => routeTo(event, '/profile')}>Profile</a>
-          <button type="button" onClick={() => jumpTo(1)}>Contact</button>
+        <nav className="mechanical-memory__quick-links" aria-label="快捷导航 / Featured navigation">
+          <a href="/projects" onClick={(event) => routeTo(event, '/projects')}><span>项目</span><small>Work</small></a>
+          <a href="/profile" onClick={(event) => routeTo(event, '/profile')}><span>关于我</span><small>Profile</small></a>
+          <button type="button" onClick={() => jumpTo(1)}><span>联系</span><small>Contact</small></button>
         </nav>
 
         <motion.header className="mechanical-memory__intro" style={{ opacity: introOpacity, y: introY }}>
@@ -1931,7 +1932,7 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
           </div>
         </motion.header>
 
-        <div className="mechanical-memory__rail" aria-label="Memory chapters">
+        <div className="mechanical-memory__rail" aria-label="记忆章节 / Memory chapters">
           <span>{progressLabel}</span>
           <div>
             {MEMORY_ENTRIES.map((entry, index) => (
@@ -1939,7 +1940,7 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
                 key={entry.chapter}
                 className={index === activeIndex ? 'is-active' : ''}
                 type="button"
-                aria-label={`Go to ${entry.title}`}
+                aria-label={`前往 ${entry.titleZh} / Go to ${entry.title}`}
                 aria-current={index === activeIndex ? 'step' : undefined}
                 onClick={() => jumpTo(entry.t)}
               >
@@ -1951,31 +1952,33 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
         </div>
 
         <motion.div className="mechanical-memory__cue" style={{ opacity: cueOpacity }} aria-hidden="true">
-          <span>Scroll to descend</span>
+          <span>向下滑动 / Scroll to descend</span>
           <i />
         </motion.div>
 
         <motion.div id="contact" className="mechanical-memory__end" style={{ opacity: endOpacity }}>
-          <p>THE STORY SO FAR / 06</p>
-            <h2>Anything is possible.</h2>
-            <span>一切皆有可能。</span>
+          <p>序章完成 / PROLOGUE COMPLETE · 06</p>
+          <h2>从这里，进入完整故事。</h2>
+          <span>接下来沿着五个章节，继续看地点、机器人、比赛、项目与现在。</span>
           <div>
-            <a href="/projects" onClick={(event) => routeTo(event, '/projects')}>See my projects</a>
-            <a href="/profile" onClick={(event) => routeTo(event, '/profile')}>About me</a>
-            <a href="mailto:masterzc624@gmail.com">Email me</a>
+            <a className="mechanical-memory__primary-action" href="/atlas" onClick={(event) => routeTo(event, '/atlas')}>
+              <span>从第一章开始<small>Start with the atlas</small></span><ArrowRight size={18} aria-hidden="true" />
+            </a>
+            <a href="/projects" onClick={(event) => routeTo(event, '/projects')}><span>直接看项目<small>Jump to work</small></span></a>
+            <a href="mailto:masterzc624@gmail.com"><span>联系我<small>Email me</small></span></a>
           </div>
         </motion.div>
 
         {status === 'loading' && (
           <div className="mechanical-memory__loading" role="status">
-            <span>Loading mechanical memory</span>
+            <span>正在载入机械记忆 / Loading mechanical memory</span>
             <i />
           </div>
         )}
         {status === 'error' && (
           <div className="mechanical-memory__loading mechanical-memory__loading--error" role="status">
-            <span>3D scene unavailable</span>
-            <small>The archive remains accessible through the navigation.</small>
+            <span>3D 场景暂不可用 / Scene unavailable</span>
+            <small>仍可通过导航浏览全部章节 / The archive remains available through navigation.</small>
           </div>
         )}
       </div>

@@ -8,12 +8,12 @@ import SectionTitle from '../components/ui/SectionTitle'
 export default function ProjectDetailPage({ project, navigate }: { project: Project; navigate: Navigate }) {
   return (
     <div className="inner-page project-detail-page">
-      <RouteLink href="/projects" navigate={navigate} className="project-back"><ArrowRight size={16} />Projects / 项目</RouteLink>
+      <RouteLink href="/projects" navigate={navigate} className="project-back"><ArrowRight size={16} />返回项目 / Projects</RouteLink>
       <PageHeading
         chapter="04"
         label={`${project.kind} / ${project.year}`}
-        title={project.title}
-        en={project.zh}
+        title={project.zh}
+        en={project.title}
         copy={project.summaryZh}
         copyEn={project.summaryEn}
       />
@@ -21,20 +21,20 @@ export default function ProjectDetailPage({ project, navigate }: { project: Proj
       <section className="case-hero">
         <img src={project.image} alt={project.imageAlt} />
         <div>
-          <p className="eyebrow">Why I made it / 为什么做</p>
+          <p className="eyebrow">为什么做 / Why I made it</p>
           <p>{project.whyZh}</p>
           <p className="en-copy">{project.whyEn}</p>
         </div>
       </section>
 
-      <section className="case-overview section-band" aria-label="Project overview">
+      <section className="case-overview section-band" aria-label="项目概览 / Project overview">
         <div className="case-role">
-          <p className="eyebrow">My role / 我的角色</p>
+          <p className="eyebrow">我的角色 / My role</p>
           <p>{project.roleZh}</p>
           <p className="en-copy">{project.roleEn}</p>
         </div>
         <div className="case-stack">
-          <p className="eyebrow">Stack / 技术</p>
+          <p className="eyebrow">技术栈 / Stack</p>
           <ul>{project.stack.map((item) => <li key={item}>{item}</li>)}</ul>
         </div>
         <div className="case-metrics">
@@ -49,7 +49,7 @@ export default function ProjectDetailPage({ project, navigate }: { project: Proj
       </section>
 
       <section className="case-process section-band">
-        <SectionTitle eyebrow="Process / 过程" title="我是怎么把它做出来的。" en="How I put it together." />
+        <SectionTitle eyebrow="实现过程 / Process" title="我是怎么把它做出来的。" en="How I put it together." />
         <div>
           {project.steps.map((item, index) => (
             <article key={item.title}>
@@ -70,12 +70,12 @@ export default function ProjectDetailPage({ project, navigate }: { project: Proj
 
       <section className="case-result section-band">
         <div>
-          <p className="eyebrow">Key decision / 关键取舍</p>
+          <p className="eyebrow">关键取舍 / Key decision</p>
           <h2>{project.interestingZh}</h2>
           <p className="en-copy">{project.interestingEn}</p>
         </div>
         <div>
-          <p className="eyebrow">Where it is now / 现在</p>
+          <p className="eyebrow">现在 / Where it is now</p>
           <p>{project.statusZh}</p>
           <p className="en-copy">{project.statusEn}</p>
           <div className="case-actions">

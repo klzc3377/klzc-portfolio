@@ -41,17 +41,17 @@ export default function ProfilePage({ navigate }: { navigate: Navigate }) {
     <div className="inner-page profile-page">
       <PageHeading
         chapter="05"
-        label="Profile / 个人简介"
+        label="个人简介 / Profile"
         title="计算机科学、机器人与软件"
         en="Computer Science, robotics and software"
         copy="我是张骋，目前在奥克兰大学读计算机科学本科。我喜欢把复杂问题拆开，再通过设计、代码与反复测试把它做成真实可用的东西。"
         copyEn="I’m Cheng Zhang, a Computer Science undergraduate at the University of Auckland. I like breaking complex problems down and turning them into real, usable things through design, code and repeated testing."
       />
 
-      <section className="profile-proof-strip" aria-label="Profile highlights">
-        <article><strong>≈7 years</strong><span>VEX robotics experience / 机器人经历</span></article>
-        <article><strong>74000M</strong><span>member and captain / 队员与队长</span></article>
-        <article><strong>UoA CS</strong><span>Computer Science undergraduate / 本科在读</span></article>
+      <section className="profile-proof-strip" aria-label="个人经历摘要 / Profile highlights">
+        <article><strong>≈7 年</strong><span>机器人经历 / VEX robotics experience</span></article>
+        <article><strong>74000M</strong><span>队员与队长 / Member and captain</span></article>
+        <article><strong>UoA CS</strong><span>计算机科学本科在读 / Undergraduate</span></article>
       </section>
 
       <section className="profile-layout">
@@ -65,22 +65,22 @@ export default function ProfilePage({ navigate }: { navigate: Navigate }) {
             <span><Bot size={17} /> Robotics · Software · AI tools</span>
           </div>
           <div className="profile-links">
-            <RouteLink href="/projects" navigate={navigate} className="solid-action">Selected work / 项目 <ArrowRight size={17} /></RouteLink>
-            <a href="mailto:masterzc624@gmail.com" className="quiet-action">Email me</a>
+            <RouteLink href="/projects" navigate={navigate} className="solid-action">精选项目 / Selected work <ArrowRight size={17} /></RouteLink>
+            <a href="mailto:masterzc624@gmail.com" className="quiet-action">给我写信 / Email me</a>
           </div>
         </Reveal>
       </section>
 
       <section className="profile-directions section-band">
-        <SectionTitle eyebrow="Focus / 方向" title="我现在主要在做这些。" en="What I’m focusing on now." />
+        <SectionTitle eyebrow="当前方向 / Focus" title="我现在主要在做这些。" en="What I’m focusing on now." />
         <div className="direction-grid">
           {directions.map((direction) => {
             const Icon = direction.icon
             return (
               <article className="direction-card" key={direction.title}>
                 <Icon size={22} />
-                <h3>{direction.title}</h3>
-                <strong>{direction.zh}</strong>
+                <h3>{direction.zh}</h3>
+                <strong>{direction.title}</strong>
                 <p>{direction.copy}</p>
                 <p className="en-copy">{direction.en}</p>
               </article>
@@ -91,21 +91,23 @@ export default function ProfilePage({ navigate }: { navigate: Navigate }) {
 
       <Reveal className="profile-availability" >
         <div>
-          <p className="eyebrow">Build next / 下一步</p>
+          <p className="eyebrow">下一步 / Build next</p>
           <h2>继续做能被真实使用、也经得起解释的项目。</h2>
           <p>我愿意交流软件、机器人、AI 工具和有挑战的交互项目。</p>
           <p className="en-copy">I’m always happy to talk about software, robotics, AI tools and ambitious interactive projects.</p>
         </div>
-        <a href="mailto:masterzc624@gmail.com" className="solid-action">Start a conversation <ArrowRight size={17} /></a>
+        <a href="mailto:masterzc624@gmail.com" className="solid-action">聊聊下一件事 / Start a conversation <ArrowRight size={17} /></a>
       </Reveal>
 
       <ChapterBridge
         index="→"
-        kicker="Epilogue / 尾声"
-        title="回到完整的成长路径"
-        en="Return to the complete journey"
-        href="/"
+        kicker="尾声 / Epilogue"
+        title="聊聊下一件想做的事"
+        en="Let’s talk about what comes next"
+        href="/#contact"
         navigate={navigate}
+        actionZh="联系我"
+        actionEn="Contact"
       />
     </div>
   )

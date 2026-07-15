@@ -40,7 +40,7 @@ export default function AwardModal({ award, onClose }: { award: Award; onClose: 
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
-      <button ref={closeRef} type="button" className="modal-close" aria-label="Close certificate preview" onClick={onClose}>
+      <button ref={closeRef} type="button" className="modal-close" aria-label="关闭证书预览 / Close certificate preview" onClick={onClose}>
         <X size={21} />
       </button>
       <motion.div

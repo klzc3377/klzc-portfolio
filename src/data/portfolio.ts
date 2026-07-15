@@ -14,7 +14,7 @@ export const navItems: NavItem[] = [
   { path: '/robotics', label: 'Robotics', zh: '机器人经历' },
   { path: '/awards', label: 'Awards', zh: '比赛记录' },
   { path: '/projects', label: 'Projects', zh: '项目' },
-  { path: '/profile', label: 'Profile', zh: '现在' },
+  { path: '/profile', label: 'Profile', zh: '关于我' },
 ]
 
 export const storyChapters: StoryChapter[] = [
@@ -103,25 +103,25 @@ export const awards: Award[] = [
 export const roboticsTimeline: RoboticsTimelineItem[] = [
   {
     year: 'Early',
-    title: 'VEX IQ / 入门',
+    title: '入门 / VEX IQ',
     zh: '我从场地任务和结构搭建学起，慢慢熟悉机械、规则与团队协作。',
     en: 'I started with field tasks and simple builds, learning mechanics, rules and teamwork as I went.',
   },
   {
     year: '74000M',
-    title: 'Team / 队伍',
+    title: '队伍 / Team',
     zh: '在 74000M，我参与搭建、调试和比赛，也承担过队员与队长的职责。',
     en: 'With 74000M, I worked on builds, testing and competitions as both a member and captain.',
   },
   {
     year: 'Match',
-    title: 'Competition / 赛场',
+    title: '赛场 / Competition',
     zh: '比赛让我学会在时间、可靠性和团队沟通之间快速做取舍。',
     en: 'Competition taught me to make fast trade-offs between time, reliability and team communication.',
   },
   {
     year: 'Now',
-    title: 'CS / 延伸',
+    title: '延伸 / Computer Science',
     zh: '现在写软件时，我仍然沿用边做、边测、复盘再迭代的工作方式。',
     en: 'I now use the same build, test, review and iterate rhythm when I make software.',
   },
@@ -150,25 +150,25 @@ export const projects: Project[] = [
     ],
     steps: [
       {
-        title: 'Archive & structure / 档案与结构',
+        title: '档案与结构 / Archive & structure',
         titleEn: 'Archive and structure',
         zh: '先核对比赛年份、地点、奖项和照片，再把内容拆成坐标、机器人、比赛、项目与现在五个章节。',
         en: 'I verified years, places, awards and photos before shaping the story into places, robotics, competitions, projects and now.',
       },
       {
-        title: '3D pipeline / 三维流程',
+        title: '三维流程 / 3D pipeline',
         titleEn: '3D pipeline',
         zh: '把 SolidWorks 装配模型整理为网页可加载的 GLB，并在 Blender 与 Three.js 中完成环境、材质、灯光和滚动镜头。',
         en: 'I prepared the SolidWorks assembly as a web-ready GLB, then built the environment, materials, lighting and scroll camera with Blender and Three.js.',
       },
       {
-        title: 'Interaction & resilience / 交互与降级',
+        title: '自适应渲染 / Adaptive rendering',
         titleEn: 'Interaction and resilience',
-        zh: '为手机减少粒子、阴影与后期效果，同时补上键盘入口、减少动态偏好、加载状态和可读的内容后备。',
-        en: 'I reduced particles, shadows and post-processing on mobile while adding keyboard paths, reduced-motion support, loading states and readable fallbacks.',
+        zh: '手机端按设备能力动态调整渲染分辨率与粒子密度，同时保留电影调色、环境反射、实时阴影和可读的内容后备。',
+        en: 'Mobile adapts render resolution and particle density to the device while preserving cinematic grading, reflections, real-time shadows and readable fallbacks.',
       },
       {
-        title: 'Release QA / 发布验证',
+        title: '发布验证 / Release QA',
         titleEn: 'Release validation',
         zh: '逐页检查路由、证书弹窗、触控导航、断点布局和构建产物，让视觉表达不会牺牲基本可用性。',
         en: 'I checked routing, certificate dialogs, touch navigation, breakpoints and production output so the visual direction would not compromise usability.',
@@ -210,19 +210,19 @@ export const projects: Project[] = [
     ],
     steps: [
       {
-        title: 'Verify / 核对',
+        title: '核对 / Verify',
         titleEn: 'Verify',
         zh: '逐张核对证书上的赛事、组别、队号、年份和奖项，避免只凭记忆整理。',
         en: 'I checked each certificate for event, division, team number, year and award instead of relying on memory alone.',
       },
       {
-        title: 'Reconnect / 重新关联',
+        title: '重新关联 / Reconnect',
         titleEn: 'Reconnect',
         zh: '把上海、青岛、重庆、海南与首尔的材料放回地图和时间线，让照片与奖项彼此对应。',
         en: 'I returned material from Shanghai, Qingdao, Chongqing, Hainan and Seoul to the map and timeline so photos and awards reinforce one another.',
       },
       {
-        title: 'Model / 模型',
+        title: '模型 / Model',
         titleEn: 'Model',
         zh: '把 74000M 的真实装配模型接入网页，让机器结构和比赛结果出现在同一个叙事空间。',
         en: 'I brought the real 74000M assembly into the web experience so the machine and its competition results share one narrative space.',
@@ -264,19 +264,19 @@ export const projects: Project[] = [
     ],
     steps: [
       {
-        title: 'Data model / 数据模型',
+        title: '数据模型 / Data model',
         titleEn: 'Data model',
         zh: '为每个地点整理经纬度、中英文说明、时间、类别、图片和镜头参数。',
         en: 'I modelled coordinates, bilingual copy, time, category, imagery and camera settings for every location.',
       },
       {
-        title: 'Map interaction / 地图交互',
+        title: '地图交互 / Map interaction',
         titleEn: 'Map interaction',
         zh: '使用矢量底图、地点图层和分阶段镜头，把世界概览、飞行过渡与城市探索连接起来。',
         en: 'I combined a vector basemap, location layers and staged camera movement across world overview, flight transition and city exploration.',
       },
       {
-        title: 'Responsive controls / 响应式控制',
+        title: '响应式控制 / Responsive controls',
         titleEn: 'Responsive controls',
         zh: '分别调整桌面鼠标与手机触控的按钮、信息面板和镜头节奏，避免地图只在大屏幕上可用。',
         en: 'I adapted controls, information panels and camera pacing for mouse and touch so the atlas would not depend on a large screen.',

@@ -1235,6 +1235,24 @@
   transform: translateX(5px);
 }
 
+.atlas-back > span {
+  display: grid;
+  gap: 1px;
+  line-height: 1;
+}
+
+.atlas-back > span small {
+  color: rgba(199, 220, 225, 0.42);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.atlas-city-controls .atlas-control-text small {
+  margin-left: 4px;
+  color: rgba(205, 224, 229, 0.42);
+  font-size: 0.61rem;
+}
+
 @media (max-width: 920px) {
   .atlas-layout {
     grid-template-columns: 1fr;
@@ -1262,5 +1280,13 @@
 
   .atlas-kicker {
     font-size: 0.48rem;
+  }
+
+  .atlas-back > span {
+    display: none;
+  }
+
+  .atlas-city-controls .atlas-control-text small {
+    display: none;
   }
 }

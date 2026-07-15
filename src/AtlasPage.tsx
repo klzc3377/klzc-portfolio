@@ -543,24 +543,24 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
   }
 
   return (
-    <section className="atlas-page" aria-label="Places from Cheng's story">
+    <section className="atlas-page" aria-label="成长坐标 / Places from Cheng's story">
       <header className="atlas-header">
         <a className="atlas-back" href="/" onClick={(event) => followRoute(event, '/')}>
           <ArrowLeft size={16} aria-hidden="true" />
-          <span>KLzc</span>
+          <span>首页<small>Home</small></span>
         </a>
         <div className="atlas-heading">
-          <p className="atlas-kicker">01 / PLACES ALONG THE WAY</p>
+          <p className="atlas-kicker">01 / 第一章 · 成长坐标 / PLACES ALONG THE WAY</p>
           <h1>
-            Coordinate Atlas <span>坐标档案</span>
+            坐标档案 <span>Coordinate Atlas</span>
           </h1>
         </div>
         <button
           className="atlas-reset"
           type="button"
           onClick={resetWorld}
-          aria-label="Reset to world overview"
-          title="World overview"
+          aria-label="返回世界视图 / Reset to world overview"
+          title="世界视图 / World overview"
         >
           <Crosshair size={18} aria-hidden="true" />
         </button>
@@ -569,7 +569,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
       <div className="atlas-layout">
         <section
           className={`atlas-map-frame is-${view}${landed ? ' is-landed' : ''}`}
-          aria-label="Interactive map of cities from Cheng's story"
+          aria-label="成长城市互动地图 / Interactive map of cities from Cheng's story"
         >
           <div className="atlas-map-status" aria-hidden="true">
             <span>{view === 'city' ? 'CITY MAP / DRAG TO EXPLORE' : 'WORLD MAP / CHOOSE A CITY'}</span>
@@ -599,7 +599,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
                   )
                 })}
               </svg>
-              <div className="atlas-label-layer" aria-label="City labels">
+              <div className="atlas-label-layer" aria-label="城市标签 / City labels">
                 {locations.map((location) => {
                   const position = labelPositionMap.get(location.id)
                   if (!position?.visible) return null
@@ -615,7 +615,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
                       onFocus={() => hoverNode(location)}
                       onBlur={() => hoverNode(null)}
                       onClick={() => activateNode(location)}
-                      aria-label={`View ${location.city}`}
+                      aria-label={`查看${location.cityZh} / View ${location.city}`}
                     >
                       <span className="atlas-map-label__city">
                         {location.cityZh}
@@ -636,8 +636,8 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
             <aside className="atlas-preview-card">
               <img src={previewImage} alt="" />
               <div>
-                <span>{previewLocation.category}</span>
-                <strong>{previewLocation.city} / {previewLocation.cityZh}</strong>
+                <span>{previewLocation.categoryZh} / {previewLocation.category}</span>
+                <strong>{previewLocation.cityZh} / {previewLocation.city}</strong>
                 <small>{previewLocation.coordinates}</small>
               </div>
             </aside>
@@ -655,33 +655,33 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
                 </div>
               </div>
               <div className="atlas-city-caption">
-                <span>PLACE / {selectedLocation.category}</span>
-                <strong>{selectedLocation.city} / {selectedLocation.cityZh}</strong>
+                  <span>地点 / PLACE · {selectedLocation.categoryZh}</span>
+                  <strong>{selectedLocation.cityZh} / {selectedLocation.city}</strong>
               </div>
             </>
           ) : null}
 
           {landed ? (
             <>
-              <div className="atlas-city-controls" aria-label="Map controls">
-                <button type="button" onClick={() => adjustZoom(-0.7)} aria-label="Zoom out">
+              <div className="atlas-city-controls" aria-label="地图控制 / Map controls">
+                <button type="button" onClick={() => adjustZoom(-0.7)} aria-label="缩小 / Zoom out">
                   <Minus size={16} aria-hidden="true" />
                 </button>
                 <span className="atlas-zoom-level">Z {zoom.toFixed(1)}</span>
-                <button type="button" onClick={() => adjustZoom(0.7)} aria-label="Zoom in">
+                <button type="button" onClick={() => adjustZoom(0.7)} aria-label="放大 / Zoom in">
                   <Plus size={16} aria-hidden="true" />
                 </button>
                 <button className="atlas-control-text" type="button" onClick={resetCityFocus}>
                   <LocateFixed size={15} aria-hidden="true" />
-                  Reset focus
+                  重新居中 <small>Reset focus</small>
                 </button>
                 <button className="atlas-control-text" type="button" onClick={resetWorld}>
                   <Globe2 size={15} aria-hidden="true" />
-                  World view
+                  世界视图 <small>World view</small>
                 </button>
               </div>
               <p className={`atlas-city-hint${manualView ? ' is-used' : ''}`}>
-                Drag to explore / Scroll or +/- to zoom
+                拖动探索 · 滚动或 +/- 缩放 / Drag and zoom
               </p>
             </>
           ) : null}
@@ -695,12 +695,12 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
                 <span className="atlas-record-coordinate">{selectedLocation.coordinates}</span>
               </div>
               <h2>
-                {selectedLocation.city}
-                <span>{selectedLocation.cityZh}</span>
+                {selectedLocation.cityZh}
+                <span>{selectedLocation.city}</span>
               </h2>
               <div className="atlas-record-type">
                 <MapPinned size={15} aria-hidden="true" />
-                {selectedLocation.category} / {selectedLocation.categoryZh}
+                {selectedLocation.categoryZh} / {selectedLocation.category}
               </div>
               <p className="atlas-copy-zh">{selectedLocation.copyZh}</p>
               <p className="atlas-copy-en">{selectedLocation.copy}</p>
@@ -719,8 +719,8 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
             <div className="atlas-overview">
               <p className="atlas-record-number">PLACES</p>
               <h2>
-                {locations.length} places
-                <span>{locations.length} 个地点</span>
+                {locations.length} 个地点
+                <span>{locations.length} places</span>
               </h2>
               <p className="atlas-copy-zh">这些城市串起了我的学校、机器人比赛，以及现在在奥克兰的学习。地图标记只到城市，不代表具体赛场。</p>
               <p className="atlas-copy-en">
@@ -729,7 +729,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
             </div>
           )}
 
-          <nav className="atlas-index" aria-label="Places">
+          <nav className="atlas-index" aria-label="地点 / Places">
             {locations.map((location) => (
               <button
                 className={`atlas-index-item${selectedId === location.id ? ' is-active' : ''}`}
@@ -750,9 +750,9 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
           </nav>
 
           <a className="atlas-next-chapter" href="/robotics" onClick={(event) => followRoute(event, '/robotics')}>
-            <span>Next chapter / 02</span>
+            <span>下一章 / Next chapter · 02</span>
             <strong>
-              Robotics <em>机器人经历</em>
+              机器人经历 <em>Robotics</em>
             </strong>
             <ArrowRight size={17} aria-hidden="true" />
           </a>

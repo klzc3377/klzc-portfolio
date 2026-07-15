@@ -14,9 +14,9 @@ export default function PageHeading({ chapter, label, title, en, copy, copyEn }:
     <header className="page-heading">
       {chapter ? (
         <div className="page-heading__chapter" aria-hidden="true">
-          <span>Chapter</span>
+          <span>章节</span>
           <strong>{chapter}</strong>
-          <em>/ 05</em>
+          <em>/ 05 · Chapter</em>
         </div>
       ) : null}
       <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="eyebrow">

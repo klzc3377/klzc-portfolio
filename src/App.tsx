@@ -20,12 +20,12 @@ const ProjectsPage = lazy(() => import('./pages/ProjectsPage'))
 const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage'))
 
 const descriptions: Record<string, string> = {
-  '/': 'Cheng Zhang is a University of Auckland Computer Science undergraduate with seven years of VEX robotics experience, building software, interactive web experiences and AI tools.',
-  '/atlas': 'An interactive atlas connecting Cheng Zhang’s robotics competitions, education and journey from Chengdu to Auckland.',
-  '/robotics': 'Seven years of VEX robotics experience with team 74000M, including building, testing, competition and team leadership.',
-  '/awards': 'Selected VEX robotics competition certificates and records from Cheng Zhang’s competition years.',
-  '/projects': 'Selected work by Cheng Zhang across interactive web development, 3D storytelling, robotics archives and data maps.',
-  '/profile': 'About Cheng Zhang, a Computer Science undergraduate at the University of Auckland focused on algorithms, software, robotics and AI tools.',
+  '/': '张骋的双语个人网站：从成都到奥克兰，记录约七年 VEX 机器人经历、计算机科学学习、软件项目与 AI 工具实践。',
+  '/atlas': '从成都到奥克兰的成长坐标档案，用互动地图连接张骋的学校、机器人比赛与学习经历。',
+  '/robotics': '张骋与 74000M 的约七年 VEX 机器人经历，包括搭建、测试、比赛与团队协作。',
+  '/awards': '张骋在 VEX 机器人比赛期间留下的部分证书、奖项与赛事记录。',
+  '/projects': '张骋的精选项目，涵盖互动网页、3D 叙事、机器人档案与数据地图。',
+  '/profile': '关于张骋：奥克兰大学计算机科学本科生，关注算法、软件、机器人与 AI 工具。',
 }
 
 function updateDocumentMetadata(path: RoutePath) {
@@ -114,7 +114,7 @@ export default function App() {
 
   return (
     <main className="site-shell" data-route={routeKey}>
-      <a className="skip-link" href="#main-content">Skip to content / 跳到正文</a>
+      <a className="skip-link" href="#main-content">跳到正文 / Skip to content</a>
       <AmbientBackdrop path={path} />
       {path !== '/atlas' ? <GlobalNav path={path} menuOpen={menuOpen} setMenuOpen={setMenuOpen} navigate={navigate} /> : null}
       {path !== '/' && path !== '/atlas' ? <StoryRail path={path} navigate={navigate} /> : null}
@@ -132,7 +132,7 @@ export default function App() {
           transition={{ duration: reducedMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
         >
           <div className="route-transition" aria-hidden="true" />
-          <Suspense fallback={<div className="route-loading" role="status">Loading chapter / 正在载入</div>}>
+          <Suspense fallback={<div className="route-loading" role="status">正在载入章节 / Loading chapter</div>}>
             {path === '/' ? <HomePage navigate={navigate} /> : null}
             {path === '/profile' ? <ProfilePage navigate={navigate} /> : null}
             {path === '/atlas' ? <AtlasPage navigate={navigate} /> : null}

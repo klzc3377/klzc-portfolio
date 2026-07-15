@@ -94,6 +94,20 @@
   background: rgba(127, 226, 242, 0.09);
 }
 
+.mechanical-memory__quick-links a > span,
+.mechanical-memory__quick-links button > span {
+  display: grid;
+  gap: 2px;
+  line-height: 1;
+}
+
+.mechanical-memory__quick-links small {
+  display: block;
+  color: rgba(204, 225, 230, 0.38);
+  font-size: 7px;
+  letter-spacing: 0.08em;
+}
+
 .mechanical-memory__intro {
   position: absolute;
   z-index: 4;
@@ -478,6 +492,30 @@
   background: rgba(14, 38, 44, 0.74);
 }
 
+.mechanical-memory__end a > span {
+  display: grid;
+  gap: 3px;
+  line-height: 1.15;
+}
+
+.mechanical-memory__end a small {
+  color: rgba(209, 230, 234, 0.46);
+  font-size: 7px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mechanical-memory__end .mechanical-memory__primary-action {
+  min-width: 250px;
+  justify-content: space-between;
+  gap: 22px;
+}
+
+.mechanical-memory__primary-action svg {
+  color: #8de6f4;
+}
+
 .mechanical-memory__loading {
   position: absolute;
   z-index: 10;
@@ -727,6 +765,11 @@
     min-height: 40px;
     padding: 0 16px;
     font-size: 9px;
+  }
+
+  .mechanical-memory__end .mechanical-memory__primary-action {
+    width: 100%;
+    min-width: 0;
   }
 }
 

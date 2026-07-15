@@ -11,13 +11,13 @@ export default function ProjectsPage({ navigate }: { navigate: Navigate }) {
     <div className="inner-page projects-page">
       <PageHeading
         chapter="04"
-        label="Selected work / 精选项目"
+        label="精选项目 / Selected work"
         title="我做过的东西"
         en="Things I’ve made"
         copy="这里不只展示最终画面，也记录每个项目的问题、我的角色、技术方案、关键取舍与结果。"
         copyEn="More than final visuals: each project records the problem, my role, technical approach, key trade-offs and outcome."
       />
-      <section className="projects-grid" aria-label="Selected projects">
+      <section className="projects-grid" aria-label="精选项目 / Selected projects">
         {projects.map((project, index) => (
           <Reveal className="project-category" key={project.slug} delay={index * 0.06}>
             <div className="project-cover">
@@ -26,15 +26,15 @@ export default function ProjectsPage({ navigate }: { navigate: Navigate }) {
             </div>
             <div className="project-copy">
               <p className="eyebrow">{String(index + 1).padStart(2, '0')} / {project.year}</p>
-              <h2>{project.title}</h2>
-              <h3>{project.zh}</h3>
+              <h2>{project.zh}</h2>
+              <h3>{project.title}</h3>
               <p>{project.summaryZh}</p>
               <p className="en-copy">{project.summaryEn}</p>
-              <ul className="project-stack-preview" aria-label={`${project.title} technology stack`}>
+              <ul className="project-stack-preview" aria-label={`${project.zh} / ${project.title} 技术栈`}>
                 {project.stack.slice(0, 4).map((item) => <li key={item}>{item}</li>)}
               </ul>
               <RouteLink href={`/projects/${project.slug}`} navigate={navigate} className="text-action">
-                View case study / 查看案例 <ArrowRight size={17} />
+                查看完整案例 / View case study <ArrowRight size={17} />
               </RouteLink>
             </div>
           </Reveal>

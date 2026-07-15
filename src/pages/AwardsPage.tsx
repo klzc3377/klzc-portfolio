@@ -9,13 +9,13 @@ export default function AwardsPage({ onOpenAward, navigate }: { onOpenAward: (aw
     <div className="inner-page awards-page">
       <PageHeading
         chapter="03"
-        label="Awards / 比赛记录"
+        label="比赛记录 / Awards"
         title="机器人比赛证书"
         en="Robotics competition certificates"
         copy="这里收录了我参加 VEX 时留下的部分证书。每张都保留赛事、组别、年份和奖项信息，点击可以查看大图。"
         copyEn="A selection of certificates from my years in VEX, kept with their event, division, year and award context. Open any one for the full record."
       />
-      <section className="awards-grid" aria-label="Award certificates">
+      <section className="awards-grid" aria-label="比赛证书 / Award certificates">
         {awards.map((award, index) => (
           <motion.button
             className="certificate-card"
@@ -28,7 +28,7 @@ export default function AwardsPage({ onOpenAward, navigate }: { onOpenAward: (aw
             transition={{ duration: 0.38, delay: index * 0.025 }}
           >
             <img src={award.image} alt={award.zh} loading={index > 2 ? 'lazy' : undefined} />
-            <div><span>{award.year}</span><strong>{award.title}</strong><p>{award.zh}</p></div>
+            <div><span>{award.year}</span><strong>{award.zh}</strong><p>{award.title}</p></div>
           </motion.button>
         ))}
       </section>
