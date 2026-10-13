@@ -2,45 +2,57 @@ import { ArrowRight } from 'lucide-react'
 import { projects } from '../data/portfolio'
 import type { Navigate } from '../types/portfolio'
 import ChapterBridge from '../components/ui/ChapterBridge'
-import PageHeading from '../components/ui/PageHeading'
+import CineImage from '../components/ui/CineImage'
+import CinematicHero from '../components/ui/CinematicHero'
 import Reveal from '../components/ui/Reveal'
 import RouteLink from '../components/ui/RouteLink'
+import SplitText from '../components/ui/SplitText'
 
 export default function ProjectsPage({ navigate }: { navigate: Navigate }) {
   return (
     <div className="inner-page projects-page">
-      <PageHeading
+      <CinematicHero
         chapter="04"
-        label="精选项目 / Selected work"
-        title="我做过的东西"
-        en="Things I’ve made"
-        copy="这里不只展示最终画面，也记录每个项目的问题、我的角色、技术方案、关键取舍与结果。"
-        copyEn="More than final visuals: each project records the problem, my role, technical approach, key trade-offs and outcome."
+        label="项目 / Projects"
+        title="项目与实践"
+        en="Selected work"
+        copy="从机器人装配到网页交互，把想法做成可以探索的作品。这里记录每个项目的过程与实现。"
+        copyEn="From robot assemblies to interactive websites. A collection of projects, with the process behind each one."
+        image="/assets/klzc-abstract-bg.webp"
+        position="62% 30%"
+        meta={[{ label: 'Reels', value: String(projects.length).padStart(2, '0') }, { label: 'Span', value: '2019—2026' }, { label: 'Stack', value: 'React · Three.js · GLB' }]}
       />
-      <section className="projects-grid" aria-label="精选项目 / Selected projects">
+
+      <section className="page-section reels" aria-label="项目 / Projects">
         {projects.map((project, index) => (
-          <Reveal className="project-category" key={project.slug} delay={index * 0.06}>
-            <div className="project-cover">
-              <img src={project.image} alt={project.imageAlt} loading={index > 0 ? 'lazy' : undefined} />
-              <span>{project.kind}</span>
-            </div>
-            <div className="project-copy">
-              <p className="eyebrow">{String(index + 1).padStart(2, '0')} / {project.year}</p>
-              <h2>{project.zh}</h2>
+          <article className={`reel${index % 2 ? ' reel--flip' : ''}`} key={project.slug}>
+            <RouteLink
+              href={`/projects/${project.slug}`}
+              navigate={navigate}
+              className="reel__media"
+              ariaLabel={`查看 ${project.zh} / View ${project.title}`}
+              cursor="查看 View"
+            >
+              <CineImage src={project.image} alt={project.imageAlt} eager={index === 0} parallax={7} direction={index % 2 ? 'left' : 'right'} />
+              <span className="reel__kind">{project.kind}</span>
+            </RouteLink>
+            <Reveal className="reel__copy" delay={0.1}>
+              <span className="reel__index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+              <p className="eyebrow">{project.year}</p>
+              <SplitText as="h2" text={project.zh} stagger={0.05} />
               <h3>{project.title}</h3>
               <p>{project.summaryZh}</p>
               <p className="en-copy">{project.summaryEn}</p>
-              <ul className="project-stack-preview" aria-label={`${project.zh} / ${project.title} 技术栈`}>
-                {project.stack.slice(0, 4).map((item) => <li key={item}>{item}</li>)}
-              </ul>
+              <p className="reel__stack">{project.stack.slice(0, 4).join('  /  ')}</p>
               <RouteLink href={`/projects/${project.slug}`} navigate={navigate} className="text-action">
-                查看完整案例 / View case study <ArrowRight size={17} />
+                查看记录 / View details <ArrowRight size={17} />
               </RouteLink>
-            </div>
-          </Reveal>
+            </Reveal>
+          </article>
         ))}
       </section>
-      <ChapterBridge index="05" title="现在与下一步" en="Now and what comes next" href="/profile" navigate={navigate} />
+
+      <ChapterBridge index="05" title="关于我" en="Profile" href="/profile" navigate={navigate} />
     </div>
   )
 }

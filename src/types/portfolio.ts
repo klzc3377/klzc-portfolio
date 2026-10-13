@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 
 export type StaticRoute = '/' | '/profile' | '/atlas' | '/robotics' | '/awards' | '/projects'
-export type RoutePath = StaticRoute | `/projects/${string}`
+export type RoutePath = StaticRoute | `/projects/${string}` | '/404'
 export type Navigate = (href: string) => void
 
 export type NavItem = {
@@ -15,6 +15,9 @@ export type StoryChapter = {
   href: StaticRoute
   label: string
   zh: string
+  title: string
+  en: string
+  image: string
 }
 
 export type Direction = {

@@ -1290,3 +1290,29 @@
     display: none;
   }
 }
+
+/* Atlas uses the site's reading scale; map labels remain secondary. */
+.atlas-page .atlas-kicker, .atlas-page .atlas-map-status, .atlas-page .atlas-record-number,
+.atlas-page .atlas-record-coordinate, .atlas-page .atlas-city-hint, .atlas-page .atlas-media figcaption,
+.atlas-page .atlas-next-chapter > span, .atlas-page .atlas-index-item > span,
+.atlas-page .atlas-index-item > small, .atlas-page .atlas-map-label__meta { font-size: 12px; line-height: 1.6; color: #a8b8bc; letter-spacing: .02em; }
+.atlas-page .atlas-copy-zh { font-size: 16px; line-height: 1.85; color: #dce4e4; }
+.atlas-page .atlas-copy-en { font-size: 14px; line-height: 1.8; color: #a8b8bc; }
+.atlas-page .atlas-index-item { min-height: 56px; }
+.atlas-page .atlas-index-item > strong { font-size: 16px; }
+.atlas-page .atlas-map-label { min-height: 44px; padding: 8px 12px; }
+.atlas-page .atlas-map-label__city { font-size: 14px; }
+.atlas-page .atlas-map-label__city small { font-size: 12px; }
+.atlas-page .atlas-reset, .atlas-page .atlas-back, .atlas-page .atlas-city-controls button { min-width: 44px; min-height: 44px; }
+.atlas-page .atlas-city-controls button, .atlas-page .atlas-control-text { font-size: 14px; }
+.atlas-page .atlas-heading h1 { line-height: 1.35; }
+.atlas-page .atlas-map-loading.is-error { display: grid; gap: 12px; justify-items: center; padding: 20px; white-space: normal; text-align: center; font-size: 14px; }
+.atlas-page .atlas-map-loading.is-error button { min-height: 44px; padding: 10px 16px; color: #e4ebeb; border: 1px solid #d7a15b66; background: #10171d; border-radius: 5px; cursor: pointer; }
+@media (max-width: 640px) {
+  .atlas-page .atlas-header { grid-template-columns: 44px minmax(0, 1fr) 44px; }
+  .atlas-page .atlas-city-controls { flex-wrap: wrap; max-width: calc(100% - 24px); }
+  .atlas-page .atlas-map-status { font-size: 12px; gap: 12px; }
+  .atlas-page .atlas-map-status > span:last-child { display: none; }
+  .atlas-page .atlas-panel { padding: 22px 18px; }
+  .atlas-page .atlas-index-item { grid-template-columns: minmax(0, .8fr) minmax(0, .6fr) minmax(0, 1fr); gap: 8px; }
+}

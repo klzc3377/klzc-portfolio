@@ -9,10 +9,11 @@ export function normalizeRoute(pathname: string): RoutePath {
   if (path.startsWith('/projects/') && projects.some((project) => `/projects/${project.slug}` === path)) {
     return path as RoutePath
   }
-  return '/'
+  return '/404'
 }
 
 export function routeTitle(path: RoutePath) {
+  if (path === '/404') return '页面未找到 / Page not found — KLzc'
   const project = projects.find((item) => `/projects/${item.slug}` === path)
   const page = navItems.find((item) => item.path === path)
   return `${project?.title ?? page?.label ?? 'Home'} / KLzc — Cheng Zhang`

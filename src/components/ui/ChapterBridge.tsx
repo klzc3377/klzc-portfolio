@@ -1,7 +1,8 @@
 import { ArrowRight } from 'lucide-react'
+import { storyChapters } from '../../data/portfolio'
 import type { Navigate } from '../../types/portfolio'
-import Reveal from './Reveal'
 import RouteLink from './RouteLink'
+import SplitText from './SplitText'
 
 type ChapterBridgeProps = {
   index: string
@@ -12,8 +13,10 @@ type ChapterBridgeProps = {
   kicker?: string
   actionZh?: string
   actionEn?: string
+  image?: string
 }
 
+/** The closing shot of a chapter doubles as the door to the next one. */
 export default function ChapterBridge({
   index,
   title,
@@ -21,21 +24,25 @@ export default function ChapterBridge({
   href,
   navigate,
   kicker = '下一章 / Next chapter',
-  actionZh = '继续阅读',
+  actionZh = '继续',
   actionEn = 'Continue',
+  image,
 }: ChapterBridgeProps) {
+  const backdrop = image ?? storyChapters.find((chapter) => chapter.href === href)?.image ?? '/assets/cinematic-tunnel-environment.webp'
+
   return (
-    <Reveal className="chapter-bridge">
-      <div className="chapter-bridge__index" aria-hidden="true">{index}</div>
-      <div className="chapter-bridge__copy">
-        <p>{kicker}</p>
-        <h2>{title}</h2>
-        <span>{en}</span>
-      </div>
-      <RouteLink href={href} navigate={navigate} className="chapter-bridge__action">
+    <RouteLink href={href} navigate={navigate} className="chapter-bridge" cursor="继续 Next">
+      <span className="chapter-bridge__plate" aria-hidden="true"><img src={backdrop} alt="" loading="lazy" decoding="async" /></span>
+      <span className="chapter-bridge__kicker">{kicker}</span>
+      <span className="chapter-bridge__index" aria-hidden="true">{index}</span>
+      <span className="chapter-bridge__copy">
+        <SplitText as="span" className="chapter-bridge__title" text={title} stagger={0.05} />
+        <span className="chapter-bridge__en">{en}</span>
+      </span>
+      <span className="chapter-bridge__action">
         <span>{actionZh}<small>{actionEn}</small></span>
-        <ArrowRight size={20} />
-      </RouteLink>
-    </Reveal>
+        <i><ArrowRight size={22} /></i>
+      </span>
+    </RouteLink>
   )
 }

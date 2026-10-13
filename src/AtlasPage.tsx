@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useReducedMotion } from 'framer-motion'
 import maplibregl, { type Map as VectorMap, type MapLayerMouseEvent } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { ArrowLeft, ArrowRight, Crosshair, Globe2, LocateFixed, MapPinned, Minus, Plus } from 'lucide-react'
@@ -82,8 +83,8 @@ const locations: AtlasLocation[] = [
     lngLat: [121.4737, 31.2304],
     callout: [156, 27],
     focus: { zoom: 11.8, pitch: 42, bearing: -16, zone: 'INNER RING / CORE' },
-    copy: 'I competed in the 2023 National VEX Robotics Elite Competition here.',
-    copyZh: '2023 年，我在上海参加全国 VEX 机器人精英赛。',
+    copy: '2023 National VEX Robotics Elite Competition. First prize, high-school division.',
+    copyZh: '2023 年，全国 VEX 机器人精英赛，高中组一等奖。',
     image: '/assets/atlas-shanghai.webp',
     imageCaption: 'Competition in Shanghai / 上海比赛照片',
   },
@@ -97,8 +98,8 @@ const locations: AtlasLocation[] = [
     lngLat: [120.3826, 36.0671],
     callout: [150, 50],
     focus: { zoom: 11.7, pitch: 39, bearing: 17, zone: 'COASTAL CORE' },
-    copy: 'I came to Qingdao for a VEX competition in 2022.',
-    copyZh: '2022 年，我来青岛参加 VEX 比赛。',
+    copy: 'The 15th VEX Asia Championship in 2022.',
+    copyZh: '2022 年，第十五届 VEX 亚洲锦标赛。',
     image: '/assets/atlas-qingdao.webp',
     imageCaption: 'Competition in Qingdao / 青岛比赛照片',
   },
@@ -112,8 +113,8 @@ const locations: AtlasLocation[] = [
     lngLat: [106.5516, 29.563],
     callout: [70, 24],
     focus: { zoom: 11.65, pitch: 43, bearing: -24, zone: 'CENTRAL PENINSULA' },
-    copy: 'I competed in the 2020 VEX IQ China National Final and a later China–Canada VEX event in Chongqing.',
-    copyZh: '我在重庆参加过 2020 VEX IQ 中国总决赛，以及之后的中国—加拿大 VEX 比赛。',
+    copy: 'The 2020 VEX IQ China National Final and a later China–Canada VEX event.',
+    copyZh: '2020 年 VEX IQ 中国总决赛，以及之后的中国—加拿大 VEX 比赛。',
     image: '/assets/atlas-chongqing.webp',
     imageCaption: 'Competition in Chongqing / 重庆比赛照片',
   },
@@ -127,8 +128,8 @@ const locations: AtlasLocation[] = [
     lngLat: [110.1983, 20.044],
     callout: [82, 8],
     focus: { zoom: 10.7, pitch: 35, bearing: -12, zone: 'HAIKOU NODE' },
-    copy: 'I have kept a few photos from a robotics competition in Hainan here.',
-    copyZh: '这里放了几张我在海南参加机器人比赛时的照片。',
+    copy: 'A few photographs from a robotics competition.',
+    copyZh: '机器人比赛时留下的几张照片。',
     image: '/assets/atlas-hainan.webp',
     imageCaption: 'Competition in Hainan / 海南比赛照片',
   },
@@ -142,8 +143,8 @@ const locations: AtlasLocation[] = [
     lngLat: [104.0668, 30.5728],
     callout: [73, 49],
     focus: { zoom: 11.6, pitch: 40, bearing: 21, zone: 'CITY CENTRE' },
-    copy: 'Chengdu is where I started building and competing with VEX robots.',
-    copyZh: '我在成都开始做 VEX 机器人，也从这里参加比赛。',
+    copy: 'Where I first started VEX robotics.',
+    copyZh: '开始接触 VEX 机器人的地方。',
   },
   {
     id: 'auckland',
@@ -155,8 +156,8 @@ const locations: AtlasLocation[] = [
     lngLat: [174.7633, -36.8485],
     callout: [148, -27],
     focus: { zoom: 11.55, pitch: 40, bearing: -28, zone: 'CENTRAL ISTHMUS' },
-    copy: 'I now study Computer Science at the University of Auckland.',
-    copyZh: '我现在在奥克兰大学读计算机科学。',
+    copy: 'Where I currently live and study Computer Science.',
+    copyZh: '现在生活和学习的地方。',
     image: '/assets/uoa-campus.webp',
     imageCaption: 'University of Auckland campus / 奥克兰大学校园',
   },
@@ -170,8 +171,8 @@ const locations: AtlasLocation[] = [
     lngLat: [126.978, 37.5665],
     callout: [163, 57],
     focus: { zoom: 11.7, pitch: 40, bearing: -12, zone: 'SEOUL CORE' },
-    copy: 'I came to Seoul for the 13th VEX Asia-Pacific Robotics Championship in 2019.',
-    copyZh: '2019 年，我来首尔参加第十三届 VEX 亚太机器人锦标赛。',
+    copy: 'My first VEX competition outside China, in 2019.',
+    copyZh: '2019 年，第一次去国外参加 VEX 比赛。',
   },
 ]
 
@@ -246,20 +247,6 @@ function addArchiveLayers(map: VectorMap) {
   })
 }
 
-function waitForTiles(map: VectorMap, maxWait = 1700) {
-  return new Promise<void>((resolve) => {
-    const started = window.performance.now()
-    const check = () => {
-      if (map.areTilesLoaded() || window.performance.now() - started > maxWait) {
-        resolve()
-        return
-      }
-      window.setTimeout(check, 90)
-    }
-    check()
-  })
-}
-
 function makeMap(container: HTMLElement, options: Partial<ConstructorParameters<typeof maplibregl.Map>[0]> = {}) {
   return new maplibregl.Map({
     container,
@@ -280,7 +267,8 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
   const mapElementRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<VectorMap | null>(null)
   const flightRef = useRef(0)
-  const warmedCitiesRef = useRef<Set<AtlasLocationId>>(new Set())
+  const reducedMotion = useReducedMotion()
+  const [mapVersion, setMapVersion] = useState(0)
   const activateRef = useRef<(location: AtlasLocation) => void>(() => undefined)
   const hoverRef = useRef<(location: AtlasLocation | null) => void>(() => undefined)
   const [selectedId, setSelectedId] = useState<AtlasLocationId | null>(null)
@@ -310,7 +298,13 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
   useEffect(() => {
     if (!mapElementRef.current) return
     let disposed = false
-    const map = makeMap(mapElementRef.current)
+    let map: VectorMap
+    try {
+      map = makeMap(mapElementRef.current)
+    } catch {
+      queueMicrotask(() => { if (!disposed) setMapError(true) })
+      return () => { disposed = true }
+    }
     mapRef.current = map
     disableExplore(map)
     const updateLabelPositions = () => {
@@ -359,6 +353,9 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
       setMapReady(true)
       setMapError(false)
     })
+    map.on('error', () => {
+      if (!disposed && !map.isStyleLoaded()) setMapError(true)
+    })
     map.on('move', updateLabelPositions)
     map.on('resize', updateLabelPositions)
     map.on('zoom', () => {
@@ -389,11 +386,12 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
 
     return () => {
       disposed = true
+      flightRef.current += 1
       window.clearTimeout(timeoutId)
       map.remove()
       mapRef.current = null
     }
-  }, [])
+  }, [mapVersion])
 
   useEffect(() => {
     const map = mapRef.current
@@ -411,92 +409,39 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
     navigate(href)
   }
 
-  async function preheatCityTiles(location: AtlasLocation) {
-    if (warmedCitiesRef.current.has(location.id)) return
-    const container = document.createElement('div')
-    container.className = 'atlas-preheat-map'
-    document.body.appendChild(container)
-    const preheatMap = makeMap(container, {
-      center: location.lngLat,
-      zoom: Math.max(location.focus.zoom - 0.35, 10.8),
-      pitch: location.focus.pitch,
-      bearing: location.focus.bearing,
-      interactive: false,
-    })
-    try {
-      await new Promise<void>((resolve) => {
-        const timeoutId = window.setTimeout(resolve, 1300)
-        preheatMap.once('load', () => {
-          window.clearTimeout(timeoutId)
-          preheatMap.jumpTo({
-            center: location.lngLat,
-            zoom: Math.max(location.focus.zoom - 0.35, 10.8),
-            pitch: location.focus.pitch,
-            bearing: location.focus.bearing,
-          })
-          waitForTiles(preheatMap, 1200).then(resolve)
-        })
-      })
-      warmedCitiesRef.current.add(location.id)
-    } finally {
-      preheatMap.remove()
-      container.remove()
-    }
-  }
-
   function activateNode(location: AtlasLocation) {
     const map = mapRef.current
-    if (!map) return
-    const flight = flightRef.current + 1
-    flightRef.current = flight
-    map.stop()
-    disableExplore(map)
+    const flight = ++flightRef.current
     setSelectedId(location.id)
     setPreviewId(null)
     setLanded(false)
     setManualView(false)
+    // Records remain usable even without WebGL or a basemap connection.
+    if (!map || !mapReady || mapError) return
+    map.stop()
+    disableExplore(map)
     setView('flight')
     showBasemapLabels(map, true)
-    const warmPromise = preheatCityTiles(location)
+    const finishFlight = () => {
+      if (flightRef.current !== flight || mapRef.current !== map) return
+      enableExplore(map)
+      setZoom(map.getZoom())
+      setLanded(true)
+      setView('city')
+    }
+    // Register first: reduced-motion transitions may finish immediately.
+    map.once('moveend', finishFlight)
     map.flyTo({
       center: location.lngLat,
-      zoom: 4.8,
-      pitch: 20,
-      bearing: location.focus.bearing * 0.45,
-      duration: 850,
-      curve: 1.28,
-      essential: true,
+      zoom: location.focus.zoom,
+      pitch: reducedMotion ? 0 : location.focus.pitch,
+      bearing: location.focus.bearing,
+      duration: reducedMotion ? 0 : 1700,
+      curve: 1.25,
+      essential: false,
     })
-    map.once('moveend', async () => {
-      if (flightRef.current !== flight) return
-      await Promise.race([
-        warmPromise,
-        new Promise<void>((resolve) => window.setTimeout(resolve, warmedCitiesRef.current.has(location.id) ? 0 : 520)),
-      ])
-      if (flightRef.current !== flight) return
-      map.flyTo({
-        center: location.lngLat,
-        zoom: location.focus.zoom,
-        pitch: location.focus.pitch,
-        bearing: location.focus.bearing,
-        duration: 1850,
-        curve: 1.18,
-        essential: true,
-      })
-      map.once('moveend', async () => {
-        if (flightRef.current !== flight) return
-        await warmPromise.catch(() => undefined)
-        if (flightRef.current !== flight) return
-        await waitForTiles(map, 720)
-        if (flightRef.current !== flight) return
-        enableExplore(map)
-        setZoom(map.getZoom())
-        setLanded(true)
-        setView('city')
-      })
-    })
+    if (reducedMotion || !map.isMoving()) finishFlight()
   }
-
   function hoverNode(location: AtlasLocation | null) {
     if (view === 'world') setPreviewId(location?.id ?? null)
   }
@@ -518,7 +463,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
     map.stop()
     disableExplore(map)
     showBasemapLabels(map, false)
-    map.flyTo({ ...WORLD_VIEW, duration: 1450, curve: 1.35, essential: true })
+    map.flyTo({ ...WORLD_VIEW, duration: reducedMotion ? 0 : 1100, curve: 1.35, essential: false })
   }
 
   function resetCityFocus() {
@@ -530,8 +475,8 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
       zoom: selectedLocation.focus.zoom,
       pitch: selectedLocation.focus.pitch,
       bearing: selectedLocation.focus.bearing,
-      duration: 850,
-      essential: true,
+      duration: reducedMotion ? 0 : 850,
+      essential: false,
     })
   }
 
@@ -539,18 +484,18 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
     const map = mapRef.current
     if (!map || !landed) return
     setManualView(true)
-    map.easeTo({ zoom: map.getZoom() + delta, duration: 280 })
+    map.easeTo({ zoom: map.getZoom() + delta, duration: reducedMotion ? 0 : 280 })
   }
 
   return (
-    <section className="atlas-page" aria-label="成长坐标 / Places from Cheng's story">
+    <section className="atlas-page" aria-label="地点记录 / Places">
       <header className="atlas-header">
         <a className="atlas-back" href="/" onClick={(event) => followRoute(event, '/')}>
           <ArrowLeft size={16} aria-hidden="true" />
           <span>首页<small>Home</small></span>
         </a>
         <div className="atlas-heading">
-          <p className="atlas-kicker">01 / 第一章 · 成长坐标 / PLACES ALONG THE WAY</p>
+          <p className="atlas-kicker">01 / 地点 / PLACES</p>
           <h1>
             坐标档案 <span>Coordinate Atlas</span>
           </h1>
@@ -569,7 +514,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
       <div className="atlas-layout">
         <section
           className={`atlas-map-frame is-${view}${landed ? ' is-landed' : ''}`}
-          aria-label="成长城市互动地图 / Interactive map of cities from Cheng's story"
+          aria-label="地点地图 / Map of places"
         >
           <div className="atlas-map-status" aria-hidden="true">
             <span>{view === 'city' ? 'CITY MAP / DRAG TO EXPLORE' : 'WORLD MAP / CHOOSE A CITY'}</span>
@@ -630,7 +575,13 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
           ) : null}
 
           {!mapReady && !mapError ? <p className="atlas-map-loading">LOADING MAP / 地图载入中</p> : null}
-          {mapError ? <p className="atlas-map-loading is-error">MAP CONNECTION UNAVAILABLE / 地图连接失败</p> : null}
+          {mapError ? <div className="atlas-map-loading is-error" role="status">
+            <p>地图暂未连接，仍可从地点列表查看全部记录。</p>
+            <button type="button" onClick={() => {
+              setMapError(false); setMapReady(false); setSelectedId(null); setView('world'); setLanded(false)
+              setMapVersion((version) => version + 1)
+            }}>重试地图 / Retry map</button>
+          </div> : null}
 
           {view === 'world' && previewLocation && previewImage ? (
             <aside className="atlas-preview-card">
@@ -722,9 +673,9 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
                 {locations.length} 个地点
                 <span>{locations.length} places</span>
               </h2>
-              <p className="atlas-copy-zh">这些城市串起了我的学校、机器人比赛，以及现在在奥克兰的学习。地图标记只到城市，不代表具体赛场。</p>
+              <p className="atlas-copy-zh">地图收录了七个与学习和 VEX 比赛有关的地点。标记只到城市，不代表具体赛场。</p>
               <p className="atlas-copy-en">
-                These cities connect school, robotics competitions and my studies in Auckland. The markers show cities, not exact venues.
+                The map contains seven places connected to my studies and VEX competitions. Markers show cities, not exact venues.
               </p>
             </div>
           )}

@@ -1,10 +1,8 @@
 .mechanical-memory {
-  --memory-display: "Barlow Condensed", "Arial Narrow", sans-serif;
-  --memory-mono: "IBM Plex Mono", Consolas, monospace;
   position: relative;
   height: 760svh;
   min-height: 4700px;
-  color: #f2f6f7;
+  color: var(--paper);
   background: #020508;
 }
 
@@ -12,7 +10,6 @@
   position: sticky;
   top: 0;
   height: 100svh;
-  min-height: 620px;
   overflow: hidden;
   isolation: isolate;
   background: #020508;
@@ -37,101 +34,62 @@
   touch-action: pan-y;
 }
 
+.mechanical-memory__contact-anchor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
 .mechanical-memory__shade {
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 52% 43%, transparent 28%, rgba(0, 0, 0, 0.2) 69%, rgba(0, 0, 0, 0.48) 112%),
-    linear-gradient(112deg, rgba(0, 28, 36, 0.12), transparent 43%, rgba(46, 0, 12, 0.1));
+    radial-gradient(circle at 52% 43%, transparent 28%, rgba(0, 0, 0, 0.22) 69%, rgba(0, 0, 0, 0.5) 112%),
+    linear-gradient(112deg, rgba(0, 28, 36, 0.1), transparent 43%, rgba(46, 12, 0, 0.1));
   box-shadow:
-    inset 0 120px 150px rgba(0, 0, 0, 0.48),
+    inset 0 120px 150px rgba(0, 0, 0, 0.5),
     inset 0 -150px 180px rgba(0, 0, 0, 0.6),
     inset 130px 0 220px rgba(0, 0, 0, 0.34);
 }
 
-.mechanical-memory__quick-links {
+/* Thin anamorphic bars frame the scene like a projected print. */
+.mechanical-memory__letterbox i {
   position: absolute;
-  z-index: 7;
-  top: 25px;
-  right: 28px;
-  display: flex;
-  align-items: center;
-  min-height: 46px;
-  padding: 4px;
-  border: 1px solid rgba(190, 226, 233, 0.3);
-  border-radius: 999px;
-  background: rgba(3, 10, 13, 0.66);
-  backdrop-filter: blur(18px) saturate(1.18);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+  z-index: 3;
+  left: 0;
+  right: 0;
+  height: clamp(10px, 2.6vh, 26px);
+  background: #000;
+  pointer-events: none;
 }
 
-.mechanical-memory__quick-links a,
-.mechanical-memory__quick-links button {
-  min-width: 86px;
-  min-height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 17px;
-  border: 0;
-  border-radius: 999px;
-  color: rgba(242, 246, 247, 0.78);
-  background: transparent;
-  font-family: var(--memory-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-decoration: none;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color 180ms ease, background-color 180ms ease;
+.mechanical-memory__letterbox i:first-child {
+  top: 0;
 }
 
-.mechanical-memory__quick-links a:hover,
-.mechanical-memory__quick-links button:hover,
-.mechanical-memory__quick-links a:focus-visible,
-.mechanical-memory__quick-links button:focus-visible {
-  color: #ffffff;
-  background: rgba(127, 226, 242, 0.09);
-}
-
-.mechanical-memory__quick-links a > span,
-.mechanical-memory__quick-links button > span {
-  display: grid;
-  gap: 2px;
-  line-height: 1;
-}
-
-.mechanical-memory__quick-links small {
-  display: block;
-  color: rgba(204, 225, 230, 0.38);
-  font-size: 7px;
-  letter-spacing: 0.08em;
+.mechanical-memory__letterbox i:last-child {
+  bottom: 0;
 }
 
 .mechanical-memory__intro {
   position: absolute;
   z-index: 4;
-  left: clamp(28px, 8vw, 138px);
-  top: clamp(118px, 17vh, 188px);
-  width: min(690px, 58vw);
+  left: var(--gutter);
+  top: clamp(130px, 19vh, 210px);
+  width: min(760px, 62vw);
   pointer-events: none;
 }
 
-.mechanical-memory__intro > p,
-.mechanical-memory__chapter article > p:first-child,
-.mechanical-memory__end > p,
-.mechanical-memory__loading,
-.mechanical-memory__cue {
-  margin: 0;
-  font-family: var(--memory-mono);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
 .mechanical-memory__intro > p {
-  margin-bottom: 22px;
-  color: rgba(218, 234, 238, 0.56);
+  margin: 0 0 26px;
+  color: rgba(236, 231, 220, 0.66);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .mechanical-memory__intro > p::before {
@@ -141,379 +99,354 @@
   display: inline-block;
   margin-right: 12px;
   vertical-align: middle;
-  background: #ff2440;
+  background: var(--amber);
+  box-shadow: 0 0 18px rgba(217, 163, 95, 0.5);
+}
+
+.mechanical-memory__intro > p span {
+  color: var(--amber);
 }
 
 .mechanical-memory__intro h1 {
   margin: 0;
   display: flex;
   flex-direction: column;
-  font-family: var(--memory-display);
-  font-size: clamp(68px, 7.2vw, 118px);
+  font-family: var(--display);
+  font-size: clamp(72px, 8.4vw, 148px);
   font-weight: 600;
-  line-height: 0.72;
-  letter-spacing: -0.045em;
+  line-height: 0.86;
+  letter-spacing: -0.04em;
   text-transform: uppercase;
-  text-wrap: balance;
 }
 
-.mechanical-memory__intro h1 span:first-child {
-  color: #f5f7f7;
+.mechanical-memory__line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.06em;
 }
 
-.mechanical-memory__intro h1 span:last-child {
-  margin-top: 0.22em;
+.mechanical-memory__line > span {
+  display: block;
+  color: var(--paper);
+  will-change: transform;
+}
+
+.mechanical-memory__line--outline > span {
   color: transparent;
-  -webkit-text-stroke: 1px rgba(238, 245, 247, 0.72);
+  -webkit-text-stroke: 1px rgba(236, 231, 220, 0.72);
 }
 
 .mechanical-memory__intro > div {
-  max-width: 620px;
-  margin-top: 42px;
+  max-width: 560px;
+  margin-top: 40px;
   display: flex;
   align-items: center;
-  gap: 28px;
-  color: rgba(225, 237, 240, 0.76);
-  font-family: var(--memory-mono);
-  font-size: 10px;
-  letter-spacing: 0.09em;
+  gap: 24px;
+  color: rgba(236, 231, 220, 0.8);
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 .mechanical-memory__intro > div::before {
   content: '';
-  width: 2px;
-  height: 54px;
-  flex: 0 0 2px;
-  background: #ff2440;
-  box-shadow: 0 0 24px rgba(255, 36, 64, 0.55);
+  width: 1px;
+  height: 52px;
+  flex: 0 0 1px;
+  background: var(--amber);
+  box-shadow: 0 0 22px rgba(217, 163, 95, 0.5);
 }
 
 .mechanical-memory__intro strong {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: 12px;
   font-weight: 500;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 }
 
-.mechanical-memory__chapter {
-  position: absolute;
-  z-index: 5;
-  left: clamp(28px, 4.2vw, 68px);
-  bottom: clamp(52px, 7vh, 78px);
-  width: min(334px, 30vw);
-  pointer-events: none;
-}
-
-.mechanical-memory__chapter article {
-  min-height: 270px;
-  padding: 22px 24px 24px;
-  border-left: 1px solid rgba(137, 224, 239, 0.48);
-  background: linear-gradient(100deg, rgba(3, 8, 12, 0.72), rgba(3, 8, 12, 0.42) 72%, rgba(3, 8, 12, 0.12));
-  backdrop-filter: blur(13px) saturate(1.08);
-  box-shadow: 18px 24px 54px rgba(0, 0, 0, 0.22);
-  pointer-events: auto;
-}
-
-.mechanical-memory__chapter article > p:first-child {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 18px;
-  color: #8de6f4;
-}
-
-.mechanical-memory__chapter article > p:first-child strong {
-  color: rgba(255, 82, 105, 0.82);
-  font-size: 8px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-align: right;
-}
-
-.mechanical-memory__chapter-place {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-areas:
-    "year place"
-    "year zh";
-  align-items: end;
-  column-gap: 17px;
-  margin-bottom: 22px;
-}
-
-.mechanical-memory__chapter-place span {
-  grid-area: year;
-  color: #ff2440;
-  font-family: var(--memory-display);
-  font-size: 56px;
-  font-weight: 600;
-  line-height: 0.82;
-  letter-spacing: -0.04em;
-}
-
-.mechanical-memory__chapter-place strong,
-.mechanical-memory__chapter-place em {
-  font-family: var(--memory-mono);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-}
-
-.mechanical-memory__chapter-place strong {
-  grid-area: place;
-  color: rgba(244, 248, 249, 0.9);
-}
-
-.mechanical-memory__chapter-place em {
-  grid-area: zh;
-  margin-top: 4px;
-  color: rgba(215, 231, 235, 0.5);
-}
-
-.mechanical-memory__chapter h2,
-.mechanical-memory__chapter h3 {
-  margin: 0;
-  font-family: var(--memory-display);
-  text-transform: uppercase;
-}
-
-.mechanical-memory__chapter h2 {
-  color: #f5f7f7;
-  font-size: clamp(34px, 2.8vw, 47px);
-  font-weight: 600;
-  line-height: 0.92;
-  letter-spacing: -0.035em;
-}
-
-.mechanical-memory__chapter h3 {
-  margin-top: 7px;
-  color: rgba(223, 234, 237, 0.62);
-  font-size: 17px;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-}
-
-.mechanical-memory__chapter-copy {
-  margin: 17px 0 22px;
-  max-width: 29em;
-  color: rgba(220, 234, 237, 0.62);
-  font-size: 13px;
-  line-height: 1.75;
-}
-
-.mechanical-memory__chapter article > a {
-  width: fit-content;
-  min-height: 38px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 15px;
-  border: 1px solid rgba(137, 224, 239, 0.34);
-  border-radius: 999px;
-  color: rgba(238, 247, 248, 0.78);
-  background: rgba(8, 17, 22, 0.5);
-  font-family: var(--memory-mono);
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: border-color 180ms ease, color 180ms ease, background-color 180ms ease;
-}
-
-.mechanical-memory__chapter article > a:hover,
-.mechanical-memory__chapter article > a:focus-visible {
-  color: #ffffff;
-  border-color: rgba(255, 51, 77, 0.72);
-  background: rgba(103, 13, 28, 0.38);
+.mechanical-memory__intro em {
+  display: block;
+  color: rgba(236, 231, 220, 0.56);
+  font-family: var(--serif);
+  font-size: 19px;
 }
 
 .mechanical-memory__rail {
   position: absolute;
   z-index: 6;
   top: 50%;
-  right: 26px;
-  width: 48px;
+  right: calc(var(--gutter) - 14px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  color: rgba(236, 231, 220, 0.5);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
   transform: translateY(-50%);
-  font-family: var(--memory-mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
+  transition: opacity 500ms ease;
 }
 
 .mechanical-memory__rail > span {
-  color: #ff2440;
+  color: var(--amber-hi);
 }
 
 .mechanical-memory__rail > em {
-  color: rgba(218, 232, 235, 0.35);
   font-style: normal;
 }
 
 .mechanical-memory__rail > div {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 8px 0;
-  border-top: 1px solid rgba(214, 229, 232, 0.16);
-  border-bottom: 1px solid rgba(214, 229, 232, 0.16);
+  padding: 6px 0;
+  border-block: 1px solid rgba(236, 231, 220, 0.16);
 }
 
 .mechanical-memory__rail button {
-  width: 42px;
-  height: 24px;
+  width: 48px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 7px;
+  gap: 8px;
   padding: 0;
   border: 0;
-  color: rgba(222, 235, 238, 0.3);
+  color: rgba(236, 231, 220, 0.42);
   background: transparent;
-  font-family: var(--memory-mono);
-  font-size: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
   cursor: pointer;
+  transition: color 300ms ease;
 }
 
 .mechanical-memory__rail button::before {
   content: '';
-  width: 12px;
+  width: 10px;
   height: 1px;
-  display: block;
   background: currentColor;
-  transition: width 180ms ease, color 180ms ease;
+  transition: width 500ms var(--ease-out);
 }
 
+.mechanical-memory__rail button:hover,
 .mechanical-memory__rail button.is-active {
-  color: #ff2440;
+  color: var(--amber-hi);
 }
 
 .mechanical-memory__rail button.is-active::before {
-  width: 24px;
+  width: 22px;
 }
 
 .mechanical-memory__cue {
   position: absolute;
   z-index: 5;
   left: 50%;
-  bottom: 24px;
+  bottom: calc(clamp(10px, 2.6vh, 26px) + 26px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: rgba(225, 238, 241, 0.4);
+  color: rgba(236, 231, 220, 0.6);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   transform: translateX(-50%);
   pointer-events: none;
 }
 
 .mechanical-memory__cue i {
+  position: relative;
   width: 1px;
-  height: 29px;
-  display: block;
-  background: rgba(230, 242, 244, 0.46);
-  animation: memoryCue 1.8s ease-in-out infinite;
+  height: 36px;
+  overflow: hidden;
+  background: rgba(236, 231, 220, 0.18);
+}
+
+.mechanical-memory__cue i::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 1px;
+  height: 40%;
+  background: var(--amber);
+  animation: memoryCue 2.2s var(--ease-in-out) infinite;
 }
 
 @keyframes memoryCue {
-  0%, 100% { transform: scaleY(0.35); transform-origin: top; opacity: 0.32; }
-  50% { transform: scaleY(1); transform-origin: top; opacity: 0.9; }
+  from { transform: translateY(-110%); }
+  to { transform: translateY(260%); }
+}
+
+.mechanical-memory__end-scrim {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(2, 4, 6, 0.86) 0%, rgba(2, 4, 6, 0.6) 34%, transparent 62%),
+    linear-gradient(0deg, rgba(2, 4, 6, 0.6), transparent 40%);
 }
 
 .mechanical-memory__end {
   position: absolute;
   z-index: 5;
-  left: clamp(28px, 8vw, 136px);
+  left: var(--gutter);
   top: 50%;
-  width: min(670px, 62vw);
+  width: min(680px, 60vw);
   transform: translateY(-50%);
   pointer-events: none;
 }
 
 .mechanical-memory__end > p {
-  margin-bottom: 22px;
-  color: #ff5269;
+  margin: 0 0 22px;
+  color: var(--amber-hi);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .mechanical-memory__end h2 {
   margin: 0;
-  color: #f5f7f7;
-  font-family: var(--memory-display);
-  font-size: clamp(60px, 7.3vw, 116px);
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: clamp(64px, 7.4vw, 124px);
   font-weight: 600;
-  line-height: 0.83;
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.mechanical-memory__end > em {
+  display: block;
+  margin-top: 12px;
+  color: rgba(236, 231, 220, 0.62);
+  font-family: var(--serif);
+  font-size: clamp(24px, 2.4vw, 36px);
 }
 
 .mechanical-memory__end > span {
   display: block;
-  margin-top: 26px;
-  color: rgba(218, 233, 236, 0.6);
-  font-size: 14px;
-  letter-spacing: 0.04em;
+  margin-top: 22px;
+  color: rgba(236, 231, 220, 0.74);
+  font-size: 16px;
+  line-height: 1.8;
 }
 
 .mechanical-memory__end > div {
   margin-top: 34px;
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   pointer-events: auto;
 }
 
 .mechanical-memory__end a {
-  min-height: 44px;
+  min-height: 56px;
   display: inline-flex;
   align-items: center;
-  padding: 0 20px;
-  border: 1px solid rgba(139, 224, 238, 0.36);
+  padding: 10px 22px;
+  border: 1px solid rgba(236, 231, 220, 0.26);
   border-radius: 999px;
-  color: rgba(243, 248, 249, 0.82);
-  background: rgba(2, 8, 11, 0.72);
-  font-family: var(--memory-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  color: var(--paper);
+  background: rgba(2, 4, 6, 0.4);
+  backdrop-filter: blur(10px);
+  font-size: 14px;
   text-decoration: none;
-  text-transform: uppercase;
-  transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease;
-}
-
-.mechanical-memory__end a:first-child {
-  color: #ffffff;
-  border-color: rgba(255, 47, 73, 0.64);
-  background: rgba(115, 14, 30, 0.58);
-}
-
-.mechanical-memory__end a:hover,
-.mechanical-memory__end a:focus-visible {
-  color: #ffffff;
-  border-color: rgba(147, 234, 247, 0.76);
-  background: rgba(14, 38, 44, 0.74);
+  transition: border-color 400ms ease, background-color 400ms ease, color 400ms ease;
 }
 
 .mechanical-memory__end a > span {
   display: grid;
-  gap: 3px;
-  line-height: 1.15;
+  gap: 2px;
+  line-height: 1.2;
 }
 
 .mechanical-memory__end a small {
-  color: rgba(209, 230, 234, 0.46);
-  font-size: 7px;
-  font-weight: 400;
-  letter-spacing: 0.08em;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.62;
   text-transform: uppercase;
+}
+
+.mechanical-memory__end a:hover,
+.mechanical-memory__end a:focus-visible {
+  border-color: var(--amber);
+  color: var(--amber-hi);
 }
 
 .mechanical-memory__end .mechanical-memory__primary-action {
   min-width: 250px;
   justify-content: space-between;
   gap: 22px;
+  border-color: var(--paper);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.mechanical-memory__end .mechanical-memory__primary-action:hover,
+.mechanical-memory__end .mechanical-memory__primary-action:focus-visible {
+  border-color: var(--amber-hi);
+  color: var(--ink);
+  background: var(--amber-hi);
 }
 
 .mechanical-memory__primary-action svg {
-  color: #8de6f4;
+  transition: transform 500ms var(--ease-out);
+}
+
+.mechanical-memory__primary-action:hover svg {
+  transform: translateX(5px);
+}
+
+.mechanical-memory__end[inert] {
+  visibility: hidden;
+}
+
+.mechanical-memory__controls {
+  position: absolute;
+  z-index: 7;
+  left: var(--gutter);
+  bottom: calc(clamp(10px, 2.6vh, 26px) + 18px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  color: rgba(236, 231, 220, 0.62);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.mechanical-memory__controls > span > span {
+  padding: 0 5px;
+  color: var(--amber);
+}
+
+.mechanical-memory__controls button,
+.mechanical-memory__loading button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid rgba(236, 231, 220, 0.2);
+  border-radius: 999px;
+  color: var(--paper);
+  background: rgba(2, 4, 6, 0.5);
+  font-family: var(--body);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 300ms ease, color 300ms ease;
+}
+
+.mechanical-memory__controls button:hover,
+.mechanical-memory__loading button:hover {
+  border-color: var(--amber);
+  color: var(--amber-hi);
 }
 
 .mechanical-memory__loading {
@@ -524,8 +457,14 @@
   place-content: center;
   justify-items: center;
   gap: 17px;
-  color: rgba(225, 238, 241, 0.66);
+  padding: 90px 24px;
+  color: rgba(236, 231, 220, 0.7);
   background: #020508;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 .mechanical-memory__loading i {
@@ -533,7 +472,7 @@
   height: 1px;
   display: block;
   overflow: hidden;
-  background: rgba(229, 240, 242, 0.13);
+  background: rgba(236, 231, 220, 0.14);
 }
 
 .mechanical-memory__loading i::after {
@@ -541,26 +480,55 @@
   width: 54px;
   height: 1px;
   display: block;
-  background: #ff2440;
-  box-shadow: 0 0 14px rgba(255, 36, 64, 0.7);
+  background: var(--amber);
+  box-shadow: 0 0 14px rgba(217, 163, 95, 0.7);
   animation: memoryLoading 1.15s ease-in-out infinite;
 }
 
 .mechanical-memory__loading small {
-  color: rgba(224, 237, 240, 0.46);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  max-width: 420px;
+  color: rgba(236, 231, 220, 0.6);
+  font-family: var(--body);
+  font-size: 14px;
+  line-height: 1.7;
+  letter-spacing: 0;
   text-transform: none;
 }
 
 .mechanical-memory__loading--error {
-  pointer-events: none;
-  background: rgba(2, 5, 8, 0.88);
+  inset: auto 0 0;
+  padding: 22px 24px;
+  pointer-events: auto;
+  background: rgba(5, 9, 13, 0.93);
 }
 
 @keyframes memoryLoading {
   from { transform: translateX(-54px); }
   to { transform: translateX(160px); }
+}
+
+.mechanical-memory--error {
+  height: 100svh;
+  min-height: 0;
+}
+
+.mechanical-memory--error .mechanical-memory__scene {
+  background: linear-gradient(90deg, #020508bb, #02050866), url('/assets/robot-74000m.webp') center / contain no-repeat;
+}
+
+.mechanical-memory--error .mechanical-memory__scene canvas {
+  opacity: 0;
+}
+
+.mechanical-memory--error .mechanical-memory__intro,
+.mechanical-memory--error .mechanical-memory__rail,
+.mechanical-memory--error .mechanical-memory__cue,
+.mechanical-memory--error .mechanical-memory__controls {
+  visibility: hidden;
+}
+
+.mechanical-memory--error .mechanical-memory__end {
+  top: 40%;
 }
 
 .mechanical-memory__accessible-list {
@@ -575,196 +543,136 @@
   border: 0;
 }
 
+.mechanical-memory__accessible-list:focus-within {
+  position: fixed;
+  z-index: 50;
+  top: 90px;
+  left: 20px;
+  width: min(560px, calc(100% - 40px));
+  height: auto;
+  max-height: calc(100svh - 150px);
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  padding: 20px 20px 20px 40px;
+  border: 1px solid rgba(217, 163, 95, 0.46);
+  background: rgba(12, 20, 27, 0.96);
+}
+
+.mechanical-memory__accessible-list a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--paper);
+  font-size: 14px;
+}
+
 @media (max-width: 900px) {
   .mechanical-memory {
     height: 660svh;
     min-height: 4200px;
   }
 
-  .mechanical-memory__quick-links {
-    top: 18px;
-    right: 20px;
-  }
-
-  .mechanical-memory__quick-links a,
-  .mechanical-memory__quick-links button {
-    min-width: 70px;
-    padding: 0 12px;
-  }
-
   .mechanical-memory__intro {
-    left: 26px;
-    top: 126px;
-    width: calc(100% - 70px);
-  }
-
-  .mechanical-memory__intro h1 {
-    font-size: clamp(62px, 15vw, 105px);
-  }
-
-  .mechanical-memory__chapter {
-    left: 22px;
-    bottom: 54px;
-    width: min(340px, calc(100vw - 88px));
-  }
-
-  .mechanical-memory__rail {
-    right: 14px;
+    top: max(118px, 16svh);
+    width: calc(100% - 80px);
   }
 
   .mechanical-memory__end {
-    left: 26px;
     top: auto;
-    bottom: 38px;
-    width: calc(100% - 80px);
+    bottom: calc(clamp(10px, 2.6vh, 26px) + 76px);
+    width: calc(100% - var(--gutter) * 2);
     transform: none;
+  }
+
+  .mechanical-memory__end-scrim {
+    background: linear-gradient(0deg, rgba(2, 4, 6, 0.92) 0%, rgba(2, 4, 6, 0.7) 45%, transparent 75%);
   }
 }
 
-@media (max-width: 600px) {
-  .mechanical-memory__sticky {
-    min-height: 560px;
-  }
-
-  .mechanical-memory__shade {
-    background:
-      radial-gradient(circle at 52% 39%, transparent 24%, rgba(0, 0, 0, 0.16) 68%, rgba(0, 0, 0, 0.42) 112%),
-      radial-gradient(circle at 8% 58%, rgba(34, 121, 145, 0.1), transparent 42%),
-      radial-gradient(circle at 94% 34%, rgba(154, 25, 67, 0.11), transparent 40%);
-    box-shadow:
-      inset 0 96px 120px rgba(0, 0, 0, 0.38),
-      inset 0 -130px 160px rgba(0, 0, 0, 0.5);
-  }
-
-  .mechanical-memory__quick-links {
-    top: 16px;
-    right: 14px;
-  }
-
-  .mechanical-memory__quick-links a,
-  .mechanical-memory__quick-links button {
-    min-width: 55px;
-    min-height: 32px;
-    padding: 0 8px;
-    font-size: 8px;
-  }
-
+@media (max-width: 760px) {
   .mechanical-memory__intro {
-    top: 118px;
-    left: 20px;
     width: calc(100% - 40px);
   }
 
   .mechanical-memory__intro > p {
-    margin-bottom: 17px;
-    font-size: 9px;
+    max-width: 260px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
   }
 
   .mechanical-memory__intro h1 {
-    font-size: clamp(55px, 17vw, 78px);
-    line-height: 0.77;
+    font-size: clamp(54px, 16.5vw, 82px);
   }
 
   .mechanical-memory__intro > div {
-    margin-top: 27px;
-    gap: 14px;
-    max-width: calc(100% - 24px);
+    gap: 16px;
     align-items: flex-start;
-    font-size: 9px;
-    line-height: 1.55;
-  }
-
-  .mechanical-memory__intro > div::before {
-    height: 40px;
-  }
-
-  .mechanical-memory__chapter {
-    left: 15px;
-    bottom: 44px;
-    width: calc(100% - 62px);
-  }
-
-  .mechanical-memory__chapter article {
-    min-height: 248px;
-    padding: 18px 18px 19px;
-    border-top: 1px solid rgba(151, 226, 239, 0.16);
-    background: linear-gradient(105deg, rgba(3, 8, 12, 0.78), rgba(3, 8, 12, 0.48) 72%, rgba(3, 8, 12, 0.2));
-    backdrop-filter: blur(17px) saturate(1.2);
-    box-shadow:
-      18px 24px 54px rgba(0, 0, 0, 0.28),
-      inset 0 1px rgba(255, 255, 255, 0.025);
-  }
-
-  .mechanical-memory__chapter article > p:first-child {
-    margin-bottom: 13px;
-    font-size: 8px;
-  }
-
-  .mechanical-memory__chapter-place {
-    margin-bottom: 15px;
-  }
-
-  .mechanical-memory__chapter-place span {
-    font-size: 44px;
-  }
-
-  .mechanical-memory__chapter h2 {
-    font-size: 36px;
-  }
-
-  .mechanical-memory__chapter h3 {
     font-size: 14px;
   }
 
-  .mechanical-memory__chapter-copy {
-    margin: 12px 0 16px;
-    font-size: 11px;
-    line-height: 1.62;
+  .mechanical-memory__intro > div::before {
+    height: 64px;
   }
 
-  .mechanical-memory__chapter article > a {
-    min-height: 34px;
-    font-size: 8px;
+  .mechanical-memory__intro > div {
+    display: grid;
+    grid-template-columns: 1px 76px minmax(0, 1fr);
+  }
+
+  /* The intro title owns the frame until the journey begins. */
+  .mechanical-memory[data-phase='intro'] .mechanical-memory__rail {
+    opacity: 0;
+    pointer-events: none;
   }
 
   .mechanical-memory__rail {
-    right: 6px;
-    width: 40px;
+    right: 4px;
+  }
+
+  .mechanical-memory__rail > span,
+  .mechanical-memory__rail > em {
+    display: none;
   }
 
   .mechanical-memory__rail button {
-    width: 36px;
+    width: 44px;
+    height: 44px;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .mechanical-memory__rail button::before {
+    width: 7px;
+  }
+
+  .mechanical-memory__rail button.is-active::before {
+    width: 14px;
   }
 
   .mechanical-memory__cue {
     display: none;
   }
 
-  .mechanical-memory__end {
+  .mechanical-memory__controls {
     left: 20px;
-    bottom: 24px;
-    width: calc(100% - 54px);
+    right: 20px;
+    justify-content: space-between;
+    gap: 8px;
   }
 
   .mechanical-memory__end h2 {
-    font-size: clamp(51px, 14.5vw, 70px);
-    line-height: 0.88;
-  }
-
-  .mechanical-memory__end > span {
-    margin-top: 20px;
-    font-size: 12px;
+    font-size: clamp(46px, 13vw, 70px);
   }
 
   .mechanical-memory__end > div {
-    margin-top: 26px;
-    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 24px;
   }
 
   .mechanical-memory__end a {
-    min-height: 40px;
-    padding: 0 16px;
-    font-size: 9px;
+    min-height: 50px;
+    padding: 8px 16px;
   }
 
   .mechanical-memory__end .mechanical-memory__primary-action {
@@ -773,163 +681,47 @@
   }
 }
 
+@media (max-height: 540px) and (orientation: landscape) {
+  .mechanical-memory__intro {
+    top: 90px;
+  }
+
+  .mechanical-memory__intro h1 {
+    font-size: clamp(42px, 10svh, 66px);
+  }
+
+  .mechanical-memory__intro > div {
+    margin-top: 20px;
+  }
+
+  .mechanical-memory__rail button {
+    height: 34px;
+  }
+
+  .mechanical-memory__cue {
+    display: none;
+  }
+
+  .mechanical-memory__end {
+    top: 52%;
+  }
+
+  .mechanical-memory__end h2 {
+    font-size: 42px;
+  }
+
+  .mechanical-memory__controls {
+    bottom: 10px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .mechanical-memory__cue i,
+  .mechanical-memory__cue i::after,
   .mechanical-memory__loading i::after {
     animation: none;
   }
 
-  .mechanical-memory__quick-links a,
-  .mechanical-memory__quick-links button,
-  .mechanical-memory__chapter article > a,
-  .mechanical-memory__end a,
   .mechanical-memory__rail button::before {
     transition: none;
-  }
-}
-
-/* Final cinematic art direction. Kept in this lazy-loaded stylesheet so it wins
-   after the route chunk is attached. */
-.mechanical-memory {
-  --memory-display: "Barlow Condensed", "Noto Sans SC Variable", "Microsoft YaHei UI", sans-serif;
-}
-
-.mechanical-memory .mechanical-memory__intro > p::before,
-.mechanical-memory .mechanical-memory__intro > div::before,
-.mechanical-memory .mechanical-memory__loading i::after {
-  background: #d7a15b;
-  box-shadow: 0 0 20px rgba(215, 161, 91, 0.46);
-}
-
-.mechanical-memory .mechanical-memory__intro h1 span:first-child,
-.mechanical-memory .mechanical-memory__end h2 {
-  color: #f3f0e9;
-}
-
-.mechanical-memory .mechanical-memory__intro h1 span:last-child {
-  -webkit-text-stroke-color: rgba(241, 239, 231, 0.66);
-}
-
-.mechanical-memory .mechanical-memory__intro > div {
-  color: rgba(237, 236, 229, 0.78);
-}
-
-.mechanical-memory .mechanical-memory__rail > span,
-.mechanical-memory .mechanical-memory__rail button.is-active,
-.mechanical-memory .mechanical-memory__end > p {
-  color: #f0c47d;
-}
-
-.mechanical-memory .mechanical-memory__chapter article {
-  border-left-color: rgba(215, 161, 91, 0.48);
-  background: linear-gradient(100deg, rgba(4, 8, 10, 0.78), rgba(4, 8, 10, 0.44) 72%, rgba(4, 8, 10, 0.12));
-}
-
-.mechanical-memory .mechanical-memory__chapter article > a:hover,
-.mechanical-memory .mechanical-memory__chapter article > a:focus-visible {
-  border-color: rgba(215, 161, 91, 0.68);
-  background: rgba(91, 61, 30, 0.36);
-}
-
-.mechanical-memory .mechanical-memory__end a:first-child {
-  border-color: rgba(215, 161, 91, 0.62);
-  background: rgba(94, 60, 27, 0.52);
-}
-
-.mechanical-memory .mechanical-memory__primary-action svg {
-  color: #f0c47d;
-}
-
-.mechanical-memory .mechanical-memory__quick-links {
-  border-color: rgba(207, 222, 218, 0.2);
-  background:
-    linear-gradient(110deg, rgba(130, 209, 208, 0.035), transparent 44%),
-    rgba(3, 7, 9, 0.76);
-  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.025);
-  backdrop-filter: blur(24px) saturate(1.08);
-}
-
-.mechanical-memory .mechanical-memory__quick-links a:hover,
-.mechanical-memory .mechanical-memory__quick-links button:hover,
-.mechanical-memory .mechanical-memory__quick-links a:focus-visible,
-.mechanical-memory .mechanical-memory__quick-links button:focus-visible {
-  background: rgba(215, 161, 91, 0.09);
-}
-
-.mechanical-memory .mechanical-memory__quick-links small {
-  color: rgba(214, 222, 216, 0.46);
-}
-
-@media (max-width: 600px) {
-  .mechanical-memory .mechanical-memory__quick-links {
-    display: none;
-  }
-
-  .mechanical-memory .mechanical-memory__intro {
-    top: 124px;
-    left: 20px;
-    width: calc(100% - 54px);
-  }
-
-  .mechanical-memory .mechanical-memory__intro > p {
-    margin-bottom: 18px;
-    color: rgba(230, 232, 225, 0.66);
-    font-size: 8.5px;
-    letter-spacing: 0.13em;
-  }
-
-  .mechanical-memory .mechanical-memory__intro h1 {
-    font-size: clamp(56px, 17vw, 72px);
-    line-height: 0.79;
-  }
-
-  .mechanical-memory .mechanical-memory__intro > div {
-    max-width: calc(100% - 8px);
-    margin-top: 30px;
-    display: grid;
-    grid-template-columns: 66px minmax(0, 1fr);
-    gap: 12px;
-    padding-left: 15px;
-    position: relative;
-    color: rgba(239, 237, 230, 0.8);
-    font-size: 10px;
-    line-height: 1.62;
-    letter-spacing: 0.045em;
-  }
-
-  .mechanical-memory .mechanical-memory__intro > div::before {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 44px;
-  }
-
-  .mechanical-memory .mechanical-memory__intro strong {
-    font-size: 9px;
-  }
-
-  .mechanical-memory .mechanical-memory__rail {
-    right: 2px;
-    width: 30px;
-    gap: 7px;
-  }
-
-  .mechanical-memory .mechanical-memory__rail > div {
-    gap: 5px;
-  }
-
-  .mechanical-memory .mechanical-memory__rail button {
-    width: 27px;
-    height: 22px;
-    gap: 4px;
-    font-size: 7px;
-  }
-
-  .mechanical-memory .mechanical-memory__rail button::before {
-    width: 7px;
-  }
-
-  .mechanical-memory .mechanical-memory__rail button.is-active::before {
-    width: 14px;
   }
 }

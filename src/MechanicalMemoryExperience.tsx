@@ -7,7 +7,7 @@ import {
   useTransform,
   type MotionValue,
 } from 'framer-motion'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Pause, Play, RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import * as THREE from 'three'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -21,6 +21,7 @@ import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
+import { configureRobotAssembly, applyAssembly, type AnimatedPart } from './scene/robotAssembly'
 import './MechanicalMemoryExperience.css'
 
 type SceneStatus = 'loading' | 'ready' | 'error'
@@ -42,29 +43,6 @@ type MemoryEntry = {
   destination: string
 }
 
-type AnimatedPartBase = {
-  finalPosition: THREE.Vector3
-  finalQuaternion: THREE.Quaternion
-  startPosition: THREE.Vector3
-  startQuaternion: THREE.Quaternion
-  arcOffset: THREE.Vector3
-  currentPosition: THREE.Vector3
-  currentQuaternion: THREE.Quaternion
-  startAt: number
-  duration: number
-}
-
-type AnimatedPart = AnimatedPartBase & (
-  | { kind: 'mesh'; object: THREE.Mesh }
-  | {
-    kind: 'batch'
-    batch: THREE.BatchedMesh
-    instanceId: number
-    finalScale: THREE.Vector3
-    matrix: THREE.Matrix4
-  }
-)
-
 type CardVisual = {
   group: THREE.Group
   baseQuaternion: THREE.Quaternion
@@ -76,17 +54,20 @@ type CardVisual = {
   t: number
 }
 
-const ENVIRONMENT_URL = '/models/v4/mechanical-memory-environment.glb'
+const ENVIRONMENT_URL = '/models/v5/mechanical-memory-environment.glb'
 const ROBOT_URL = '/models/robot-74000m-assembly.glb'
+const DESKTOP_TARGET_FRAME_RATE = 60
+const DESKTOP_PIXEL_RATIO_CAP = 1.5
+const DESKTOP_MSAA_SAMPLES = 2
 
 const CINEMATIC_SHADER = {
   uniforms: {
     tDiffuse: { value: null },
     uTime: { value: 0 },
     uProgress: { value: 0 },
-    uGrain: { value: 0.012 },
-    uAberration: { value: 0.00068 },
-    uVignette: { value: 0.24 },
+    uGrain: { value: 0.006 },
+    uAberration: { value: 0.00024 },
+    uVignette: { value: 0.26 },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -119,8 +100,8 @@ const CINEMATIC_SHADER = {
       float vignette = 1.0 - smoothstep(0.14, 0.58, edge) * uVignette;
       color *= vignette;
       float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-      vec3 shadowTint = vec3(0.89, 0.98, 1.05);
-      vec3 highlightTint = vec3(1.04, 0.98, 0.99);
+      vec3 shadowTint = vec3(0.9, 0.98, 1.04);
+      vec3 highlightTint = vec3(1.06, 1.0, 0.93);
       color *= mix(shadowTint, highlightTint, smoothstep(0.08, 0.88, luminance));
       // Broad asymmetric light pools replace the previous uniform black void.
       // Their palette changes by chapter, while the luminance mask protects UI
@@ -155,7 +136,7 @@ const MEMORY_ENTRIES: MemoryEntry[] = [
     chapter: 'MATCH / 01',
     title: 'First competition abroad',
     titleZh: '第一次去国外参加机器人比赛',
-    description: '在首尔参加第十三届 VEX 亚太机器人锦标赛，获得 VEX IQ 初中组铜奖。',
+    description: '2019 年，我第一次前往国外参加 VEX 比赛，并在首尔获得 VEX IQ 初中组铜奖。',
     image: '/assets/award-7.webp',
     result: 'VEX IQ BRONZE',
     resultZh: '亚太锦标赛铜奖',
@@ -171,7 +152,7 @@ const MEMORY_ENTRIES: MemoryEntry[] = [
     chapter: 'FINAL / 02',
     title: 'VEX IQ China National Final',
     titleZh: 'VEX 世锦赛中国总决赛',
-    description: '在重庆参加 VEX 世锦赛中国总决赛，获得 VEX IQ 初中组一等奖。',
+    description: '2020 年，76000M 在重庆参加 VEX IQ 中国总决赛，获得初中组一等奖。',
     image: '/assets/award-5.webp',
     result: 'FIRST PRIZE',
     resultZh: '中国总决赛一等奖',
@@ -187,7 +168,7 @@ const MEMORY_ENTRIES: MemoryEntry[] = [
     chapter: 'ASIA / 03',
     title: 'VEX Asia Championship',
     titleZh: '第十五届 VEX 亚洲锦标赛',
-    description: '以 74000M 队员身份前往青岛参加第十五届 VEX 亚洲锦标赛。',
+    description: '2022 年，我以 74000M 队员身份前往青岛，参加第十五届 VEX 亚洲锦标赛。',
     image: '/assets/vex-asia-pacific.webp',
     result: 'ASIA EVENT',
     resultZh: '亚洲锦标赛记录',
@@ -203,7 +184,7 @@ const MEMORY_ENTRIES: MemoryEntry[] = [
     chapter: 'ELITE / 04',
     title: 'National VEX Elite Competition',
     titleZh: '科创青禾全国 VEX 精英赛',
-    description: '在上海参加科创青禾全国 VEX 精英赛，获得高中组一等奖。',
+    description: '2023 年，74000M 在上海参加全国 VEX 机器人精英赛，获得高中组一等奖。',
     image: '/assets/award-1.webp',
     result: 'FIRST PRIZE',
     resultZh: '全国精英赛一等奖',
@@ -219,7 +200,7 @@ const MEMORY_ENTRIES: MemoryEntry[] = [
     chapter: 'CHAMPION / 05',
     title: 'China–Canada VEX Competition',
     titleZh: '中国—加拿大 VEX 西南区比赛',
-    description: '在中国—加拿大 VEX 机器人国际赛（西南区）中，74000M 获得团队协作冠军。',
+    description: '2023 年，74000M 在重庆参加中国—加拿大 VEX 西南区比赛，获得团队协作冠军。',
     image: '/assets/teamwork-trophy.webp',
     result: 'TEAMWORK CHAMPION',
     resultZh: '团队协作冠军',
@@ -235,7 +216,7 @@ const MEMORY_ENTRIES: MemoryEntry[] = [
     chapter: 'SIGNATURE / 06',
     title: 'V5RC Signature Event',
     titleZh: '第十七届 VEX 亚洲锦标赛签名赛',
-    description: '参加第十七届 VEX 亚洲机器人锦标赛签名赛，获得 V5RC 高中组二等奖。',
+    description: '2025 年，我以 89866B 队员身份参加 VEX 亚洲锦标赛签名赛，获得高中组二等奖。',
     image: '/assets/award-8.webp',
     result: 'SECOND PRIZE',
     resultZh: '高中组二等奖',
@@ -282,312 +263,17 @@ function disposeObject(root: THREE.Object3D) {
       Object.values(material).forEach((value) => {
         if (value instanceof THREE.Texture) textures.add(value)
       })
+      if (material instanceof THREE.ShaderMaterial) {
+        Object.values(material.uniforms).forEach(({ value }) => {
+          if (value instanceof THREE.Texture) textures.add(value)
+        })
+      }
     })
   })
   batchedMeshes.forEach((batch) => batch.dispose())
   textures.forEach((texture) => texture.dispose())
   materials.forEach((material) => material.dispose())
   geometries.forEach((geometry) => geometry.dispose())
-}
-
-function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group, compact: boolean) {
-  // The source assembly's physical base is inverted relative to the glTF's
-  // authored screen orientation, so turn it over before normalizing the model.
-  model.rotation.z = Math.PI
-  model.updateMatrixWorld(true)
-  const bounds = new THREE.Box3().setFromObject(model)
-  if (bounds.isEmpty()) return [] as AnimatedPart[]
-
-  const center = bounds.getCenter(new THREE.Vector3())
-  const size = bounds.getSize(new THREE.Vector3())
-  const scale = 5.45 / Math.max(size.x, size.y, size.z, 0.001)
-  const normalizer = new THREE.Group()
-  normalizer.position.copy(center).multiplyScalar(-scale)
-  normalizer.scale.setScalar(scale)
-  normalizer.add(model)
-  host.add(normalizer)
-  host.position.set(0, -5.1, 0)
-  host.rotation.y = -0.42
-  host.updateMatrixWorld(true)
-
-  const meshes: THREE.Mesh[] = []
-  const materialIndices = new Map<THREE.Mesh, number>()
-  const robotMaterialSpecs = [
-    { color: 0x651427, metalness: 0.56, roughness: 0.34, sheen: 0xff6685 },
-    { color: 0x0e3a34, metalness: 0.58, roughness: 0.36, sheen: 0x63ded4 },
-    { color: 0x0b1116, metalness: 0.72, roughness: 0.3, sheen: 0x7bb7ca },
-    { color: 0x12384c, metalness: 0.62, roughness: 0.33, sheen: 0x74b7ff },
-    { color: 0x61402d, metalness: 0.6, roughness: 0.36, sheen: 0xffa56f },
-    { color: 0x65757c, metalness: 0.8, roughness: 0.29, sheen: 0xa9dce5 },
-  ]
-  const robotMaterials = robotMaterialSpecs.map((spec, index) => new THREE.MeshPhysicalMaterial({
-    color: spec.color,
-    metalness: spec.metalness,
-    roughness: spec.roughness,
-    envMapIntensity: index === 5 ? 0.96 : 0.82,
-    clearcoat: index === 5 ? 0.44 : 0.58,
-    clearcoatRoughness: index === 5 ? 0.18 : 0.14,
-    iridescence: index === 5 ? 0.07 : 0.16,
-    iridescenceIOR: 1.28,
-    sheen: index === 5 ? 0.12 : 0.26,
-    sheenColor: new THREE.Color(spec.sheen),
-    sheenRoughness: 0.42,
-  }))
-  model.traverse((object) => {
-    if (!(object instanceof THREE.Mesh) || !object.visible) return
-    const index = meshes.length
-    const colorRoll = seededNoise(index + 211)
-    const materialIndex = colorRoll < 0.08
-      ? 0
-      : colorRoll < 0.15
-        ? 1
-        : colorRoll < 0.22
-          ? 2
-          : colorRoll < 0.28
-            ? 3
-            : colorRoll < 0.33
-              ? 4
-              : 5
-    object.material = robotMaterials[materialIndex]
-    object.castShadow = compact ? false : index % 4 === 0
-    object.receiveShadow = true
-    materialIndices.set(object, materialIndex)
-    meshes.push(object)
-  })
-
-  const sizeRanks = new Map<THREE.Mesh, number>()
-  const rankedMeshes = [...meshes]
-    .map((object) => ({
-      object,
-      size: new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3()).length(),
-    }))
-    .sort((a, b) => a.size - b.size)
-  rankedMeshes.forEach(({ object }, rank) => {
-    sizeRanks.set(object, rank / Math.max(1, rankedMeshes.length - 1))
-  })
-
-  // Give every mesh its own deterministic slot instead of reusing a small
-  // set of start times. This keeps the build visibly continuous as the user
-  // scrolls, rather than releasing whole batches near the end.
-  const assemblyOrder = new Map<THREE.Mesh, number>()
-  meshes
-    .map((object, index) => ({ object, order: seededNoise(index + 347) }))
-    .sort((a, b) => a.order - b.order)
-    .forEach(({ object }, rank) => {
-      assemblyOrder.set(object, rank / Math.max(1, meshes.length - 1))
-    })
-
-  const hostWorldInverse = host.matrixWorld.clone().invert()
-
-  if (compact) {
-    type BatchEntry = {
-      object: THREE.Mesh
-      index: number
-      finalMatrix: THREE.Matrix4
-      finalPosition: THREE.Vector3
-      finalQuaternion: THREE.Quaternion
-      finalScale: THREE.Vector3
-      startPosition: THREE.Vector3
-      startQuaternion: THREE.Quaternion
-      arcOffset: THREE.Vector3
-      startAt: number
-      duration: number
-      castsShadow: boolean
-      materialIndex: number
-    }
-
-    const batchEntries = meshes.map((object, index): BatchEntry => {
-      const angle = index * 2.399963229728653
-      const distance = 3 + seededNoise(index + 31) * 5.3
-      const rise = 4.5 + seededNoise(index + 47) * 11
-      const finalMatrix = hostWorldInverse.clone().multiply(object.matrixWorld)
-      const finalPosition = new THREE.Vector3()
-      const finalQuaternion = new THREE.Quaternion()
-      const finalScale = new THREE.Vector3()
-      finalMatrix.decompose(finalPosition, finalQuaternion, finalScale)
-      const startQuaternion = finalQuaternion.clone().multiply(
-        new THREE.Quaternion().setFromEuler(new THREE.Euler(
-          (seededNoise(index + 71) - 0.5) * 3.1,
-          (seededNoise(index + 83) - 0.5) * 3.6,
-          (seededNoise(index + 97) - 0.5) * 2.8,
-        )),
-      )
-      const sizeRank = sizeRanks.get(object) ?? 0
-      const order = assemblyOrder.get(object) ?? 0
-      const startAt = THREE.MathUtils.clamp(
-        0.004 + order * 0.87 - sizeRank * 0.075 + (1 - sizeRank) * 0.018,
-        0.004,
-        0.88,
-      )
-      const duration = Math.min(
-        0.075 + seededNoise(index + 127) * 0.055,
-        1 - startAt,
-      )
-      const arcStrength = 0.65 + seededNoise(index + 173) * 1.9
-      return {
-        object,
-        index,
-        finalMatrix,
-        finalPosition,
-        finalQuaternion,
-        finalScale,
-        startPosition: finalPosition.clone().add(new THREE.Vector3(
-          Math.cos(angle) * distance,
-          rise,
-          Math.sin(angle) * distance,
-        )),
-        startQuaternion,
-        arcOffset: new THREE.Vector3(
-          Math.cos(angle + Math.PI / 2) * arcStrength,
-          seededNoise(index + 197) * 0.85,
-          Math.sin(angle + Math.PI / 2) * arcStrength,
-        ),
-        startAt,
-        duration,
-        castsShadow: sizeRank >= 0.955,
-        materialIndex: materialIndices.get(object) ?? 5,
-      }
-    })
-
-    const groupedEntries = new Map<string, BatchEntry[]>()
-    batchEntries.forEach((entry) => {
-      const key = `${entry.materialIndex}:${entry.castsShadow ? 1 : 0}`
-      const group = groupedEntries.get(key)
-      if (group) group.push(entry)
-      else groupedEntries.set(key, [entry])
-    })
-
-    const batches: THREE.BatchedMesh[] = []
-    const batchedParts: AnimatedPart[] = []
-    try {
-      groupedEntries.forEach((entries) => {
-        const totalVertices = entries.reduce(
-          (sum, entry) => sum + entry.object.geometry.getAttribute('position').count,
-          0,
-        )
-        const totalIndices = entries.reduce(
-          (sum, entry) => sum + (entry.object.geometry.index?.count ?? 0),
-          0,
-        )
-        const material = robotMaterials[entries[0].materialIndex]
-        const batch = new THREE.BatchedMesh(entries.length, totalVertices, totalIndices, material)
-        batch.castShadow = entries[0].castsShadow
-        batch.receiveShadow = true
-        batch.frustumCulled = false
-        batch.perObjectFrustumCulled = true
-        batch.sortObjects = false
-        batches.push(batch)
-
-        entries.forEach((entry) => {
-          const geometryId = batch.addGeometry(entry.object.geometry)
-          const instanceId = batch.addInstance(geometryId)
-          batch.setMatrixAt(instanceId, entry.finalMatrix)
-          batchedParts.push({
-            kind: 'batch',
-            batch,
-            instanceId,
-            finalPosition: entry.finalPosition,
-            finalQuaternion: entry.finalQuaternion,
-            finalScale: entry.finalScale,
-            startPosition: entry.startPosition,
-            startQuaternion: entry.startQuaternion,
-            arcOffset: entry.arcOffset,
-            currentPosition: entry.finalPosition.clone(),
-            currentQuaternion: entry.finalQuaternion.clone(),
-            matrix: new THREE.Matrix4(),
-            startAt: entry.startAt,
-            duration: entry.duration,
-          })
-        })
-      })
-
-      host.remove(normalizer)
-      batches.forEach((batch) => host.add(batch))
-      const sourceGeometries = new Set(meshes.map((mesh) => mesh.geometry))
-      sourceGeometries.forEach((geometry) => geometry.dispose())
-      return batchedParts
-    } catch (error) {
-      console.warn('Falling back to individual robot meshes', error)
-      batches.forEach((batch) => batch.dispose())
-    }
-  }
-
-  return meshes.map((object, index) => {
-    const angle = index * 2.399963229728653
-    const distance = 3 + seededNoise(index + 31) * 5.3
-    const rise = 4.5 + seededNoise(index + 47) * 11
-    const parentToHost = hostWorldInverse.clone().multiply(object.parent?.matrixWorld ?? model.matrixWorld)
-    const hostToParentLinear = new THREE.Matrix3().setFromMatrix4(parentToHost.invert())
-    const localOffset = new THREE.Vector3(
-      Math.cos(angle) * distance,
-      rise,
-      Math.sin(angle) * distance,
-    ).applyMatrix3(hostToParentLinear)
-    const finalPosition = object.position.clone()
-    const finalQuaternion = object.quaternion.clone()
-    const startQuaternion = finalQuaternion.clone().multiply(
-      new THREE.Quaternion().setFromEuler(new THREE.Euler(
-        (seededNoise(index + 71) - 0.5) * 3.1,
-        (seededNoise(index + 83) - 0.5) * 3.6,
-        (seededNoise(index + 97) - 0.5) * 2.8,
-      )),
-    )
-    const sizeRank = sizeRanks.get(object) ?? 0
-    const order = assemblyOrder.get(object) ?? 0
-    // Large silhouette-defining members arrive slightly earlier; small
-    // hardware keeps falling in until the final stretch. Nothing is held for
-    // a global bottom-of-page snap.
-    const startAt = THREE.MathUtils.clamp(
-      0.004 + order * 0.87 - sizeRank * 0.075 + (1 - sizeRank) * 0.018,
-      0.004,
-      0.88,
-    )
-    const duration = Math.min(
-      0.075 + seededNoise(index + 127) * 0.055,
-      1 - startAt,
-    )
-    const arcStrength = 0.65 + seededNoise(index + 173) * 1.9
-    const arcOffset = new THREE.Vector3(
-      Math.cos(angle + Math.PI / 2) * arcStrength,
-      seededNoise(index + 197) * 0.85,
-      Math.sin(angle + Math.PI / 2) * arcStrength,
-    ).applyMatrix3(hostToParentLinear)
-    return {
-      kind: 'mesh' as const,
-      object,
-      finalPosition,
-      finalQuaternion,
-      startPosition: finalPosition.clone().add(localOffset),
-      startQuaternion,
-      arcOffset,
-      currentPosition: finalPosition.clone(),
-      currentQuaternion: finalQuaternion.clone(),
-      startAt,
-      duration,
-    }
-  })
-}
-
-function applyAssembly(parts: AnimatedPart[], progress: number) {
-  parts.forEach((part) => {
-    const local = smoothStep((progress - part.startAt) / part.duration)
-    // A gravity-like descent makes each part visibly travel down into place;
-    // the sideways arc prevents the motion from reading as a flat crossfade.
-    const descent = 1 - Math.pow(1 - local, 2.35)
-    const arc = Math.sin(local * Math.PI) * (1 - local * 0.35)
-    part.currentPosition.lerpVectors(part.startPosition, part.finalPosition, descent)
-    part.currentPosition.addScaledVector(part.arcOffset, arc)
-    part.currentQuaternion.slerpQuaternions(part.startQuaternion, part.finalQuaternion, local)
-    if (part.kind === 'mesh') {
-      part.object.position.copy(part.currentPosition)
-      part.object.quaternion.copy(part.currentQuaternion)
-    } else {
-      part.batch.setMatrixAt(
-        part.instanceId,
-        part.matrix.compose(part.currentPosition, part.currentQuaternion, part.finalScale),
-      )
-    }
-  })
 }
 
 function createParticles(compact: boolean) {
@@ -609,6 +295,10 @@ function createParticles(compact: boolean) {
     [new THREE.Color(0xe06a35), new THREE.Color(0x4c8be0)],
   ]
   const silver = new THREE.Color(0xb9cbd0)
+  // Pull the chapter palette toward warm projector dust so the volume reads as
+  // light in air rather than coloured confetti.
+  const dust = new THREE.Color(0xd9cdb8)
+  const graded = new THREE.Color()
 
   for (let index = 0; index < count; index += 1) {
     const seed = seededNoise(index + 401)
@@ -635,7 +325,7 @@ function createParticles(compact: boolean) {
     const colorBand = paletteBands[clustered
       ? clusterBand
       : Math.min(paletteBands.length - 1, Math.floor(vertical * paletteBands.length))]
-    const color = seed < 0.67 ? colorBand[0] : seed < 0.92 ? colorBand[1] : silver
+    const color = graded.copy(seed < 0.67 ? colorBand[0] : seed < 0.92 ? colorBand[1] : silver).lerp(dust, 0.42)
     colors[index * 3] = color.r
     colors[index * 3 + 1] = color.g
     colors[index * 3 + 2] = color.b
@@ -653,9 +343,9 @@ function createParticles(compact: boolean) {
     alphas[index] = haze
       ? 0.014 + seededNoise(index + 541) * 0.028
       : pearl
-        ? 0.14 + seededNoise(index + 541) * 0.22
+        ? 0.09 + seededNoise(index + 541) * 0.15
         : clustered
-          ? 0.14 + seededNoise(index + 541) * 0.23
+          ? 0.1 + seededNoise(index + 541) * 0.17
           : 0.03 + seededNoise(index + 541) * 0.06
   }
 
@@ -1618,16 +1308,20 @@ function loadGltf(loader: GLTFLoader, url: string) {
 function MechanicalMemoryScene({
   progress,
   reducedMotion,
+  paused,
   onStatus,
   onNavigate,
 }: {
   progress: MotionValue<number>
   reducedMotion: boolean
+  paused: boolean
   onStatus: (status: SceneStatus) => void
   onNavigate: (href: string) => void
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const hostRef = useRef<HTMLDivElement | null>(null)
+  const pausedRef = useRef(paused)
+  useEffect(() => { pausedRef.current = paused }, [paused])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -1643,19 +1337,20 @@ function MechanicalMemoryScene({
     const constrainedMobile = compact && (hardwareThreads <= 4 || deviceMemory <= 2)
     // Mobile keeps the same lighting and post-processing stack as desktop,
     // while its internal resolution can continuously follow the GPU budget.
-    const compactPixelRatioCap = constrainedMobile ? 1.65 : 2.1
-    const compactPixelBudget = constrainedMobile ? 1_600_000 : 2_500_000
+    const compactPixelRatioCap = constrainedMobile ? 1.25 : 1.65
+    const compactPixelBudget = constrainedMobile ? 900_000 : 1_600_000
     const minimumQualityScale = constrainedMobile ? 0.7 : 0.72
     let runtimeQualityScale = compact ? (constrainedMobile ? 0.86 : 0.9) : 1
+    const targetFrameRate = constrainedMobile ? 30 : DESKTOP_TARGET_FRAME_RATE
+    const renderStep = 1000 / targetFrameRate
     const resolvePixelRatio = (width: number, height: number) => {
       const deviceRatio = window.devicePixelRatio || 1
-      if (!compact) return Math.min(deviceRatio, 1.65)
+      if (!compact) return Math.min(deviceRatio, DESKTOP_PIXEL_RATIO_CAP)
       const budgetRatio = Math.sqrt(compactPixelBudget / Math.max(1, width * height))
       return Math.max(1, Math.min(deviceRatio, compactPixelRatioCap, budgetRatio) * runtimeQualityScale)
     }
     const pointerNdc = new THREE.Vector2()
     const raycaster = new THREE.Raycaster()
-    const startTime = performance.now()
     const world = new THREE.Group()
     const cardVisuals: CardVisual[] = []
     let robotRoot: THREE.Group | null = null
@@ -1663,19 +1358,31 @@ function MechanicalMemoryScene({
     let animatedParts: AnimatedPart[] = []
     let activePixelRatio = 1
 
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: !compact,
-      alpha: false,
-      powerPreference: 'high-performance',
-    })
+    let renderer: THREE.WebGLRenderer
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: false,
+        alpha: false,
+        powerPreference: compact ? 'low-power' : 'high-performance',
+      })
+    } catch {
+      onStatus('error')
+      return
+    }
+    const onContextLost = (event: Event) => {
+      event.preventDefault()
+      onStatus('error')
+    }
+    canvas.addEventListener('webglcontextlost', onContextLost)
+    canvas.dataset.renderTarget = `${targetFrameRate}`
     renderer.setClearColor(0x03080c, 1)
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = compact ? 0.9 : 0.86
+    renderer.toneMappingExposure = compact ? 1.02 : 0.98
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
-    renderer.shadowMap.autoUpdate = !compact
+    renderer.shadowMap.autoUpdate = false
 
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(0x03080c)
@@ -1687,10 +1394,14 @@ function MechanicalMemoryScene({
     camera.up.set(0, 1, 0)
 
     const pmremGenerator = new THREE.PMREMGenerator(renderer)
-    const roomTarget = pmremGenerator.fromScene(new RoomEnvironment(), 0.04)
+    const room = new RoomEnvironment()
+    const roomTarget = pmremGenerator.fromScene(room, 0.04)
+    room.dispose()
     scene.environment = roomTarget.texture
     let hdrTarget: THREE.WebGLRenderTarget | null = null
-    const hdrLoader = new HDRLoader()
+    const manager = new THREE.LoadingManager()
+    manager.onLoad = () => { forceRender = true }
+    const hdrLoader = new HDRLoader(manager)
     hdrLoader.load(
       '/assets/pbr/empty-warehouse-01-1k.hdr',
       (texture) => {
@@ -1708,7 +1419,7 @@ function MechanicalMemoryScene({
 
     scene.add(new THREE.HemisphereLight(0x8bd7e9, 0x16050a, compact ? 0.38 : 0.36))
     scene.add(new THREE.AmbientLight(0x18323d, compact ? 0.12 : 0.11))
-    const key = new THREE.DirectionalLight(0xd8f8ff, compact ? 1.3 : 1.34)
+    const key = new THREE.DirectionalLight(0xf5f1e8, compact ? 1.7 : 1.85)
     key.position.set(5, 13, 8)
     key.target.position.set(0, -2, 0)
     key.castShadow = true
@@ -1746,7 +1457,7 @@ function MechanicalMemoryScene({
     const { points: particles, material: particleMaterial } = createParticles(compact)
     world.add(cloudVeils, particles)
 
-    const textureLoader = new THREE.TextureLoader()
+    const textureLoader = new THREE.TextureLoader(manager)
     MEMORY_ENTRIES.forEach((entry, index) => {
       const card = createCardVisual(entry, index, textureLoader, compact)
       cardVisuals.push(card)
@@ -1755,40 +1466,52 @@ function MechanicalMemoryScene({
 
     const composer = new EffectComposer(renderer)
     if (!compact && renderer.capabilities.isWebGL2) {
-      composer.renderTarget1.samples = 4
-      composer.renderTarget2.samples = 4
+      composer.renderTarget1.samples = DESKTOP_MSAA_SAMPLES
+      composer.renderTarget2.samples = DESKTOP_MSAA_SAMPLES
     }
     composer.addPass(new RenderPass(scene, camera))
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(1, 1),
-      0.27,
+      0.18,
       compact ? 0.46 : 0.48,
       compact ? 0.98 : 0.96,
     )
     composer.addPass(bloomPass)
+    bloomPass.enabled = !constrainedMobile
     const cinematicPass = new ShaderPass(CINEMATIC_SHADER)
     if (compact) {
-      cinematicPass.uniforms.uGrain.value = 0.0105
-      cinematicPass.uniforms.uAberration.value = 0.00058
-      cinematicPass.uniforms.uVignette.value = 0.24
+      cinematicPass.uniforms.uGrain.value = 0.004
+      cinematicPass.uniforms.uAberration.value = 0.00015
+      cinematicPass.uniforms.uVignette.value = 0.18
     }
     composer.addPass(cinematicPass)
     const fxaaPass = compact ? new ShaderPass(FXAAShader) : null
     if (fxaaPass) composer.addPass(fxaaPass)
     composer.addPass(new OutputPass())
 
-    const loader = new GLTFLoader()
+    const loader = new GLTFLoader(manager)
     loader.setMeshoptDecoder(MeshoptDecoder)
     onStatus('loading')
-    Promise.all([
-      loadGltf(loader, ENVIRONMENT_URL),
-      loadGltf(loader, ROBOT_URL),
-    ]).then(([environment, robot]) => {
+    const loadingTimeout = window.setTimeout(() => {
+      if (!cancelled) onStatus('error')
+    }, 30000)
+    // Dispose whichever model finishes after navigation, including when its
+    // companion request fails. Optional scenery must not hide a loaded robot.
+    const loadOwnedModel = async (url: string) => {
+      const model = await loadGltf(loader, url)
       if (cancelled) {
-        disposeObject(environment)
-        disposeObject(robot)
-        return
+        disposeObject(model)
+        return null
       }
+      world.add(model)
+      return model
+    }
+    Promise.all([
+      loadOwnedModel(ENVIRONMENT_URL).catch(() => null),
+      loadOwnedModel(ROBOT_URL),
+    ]).then(([environment, robot]) => {
+      if (cancelled || !robot) return
+      window.clearTimeout(loadingTimeout)
       const refineEnvironmentMaterial = (
         mesh: THREE.Mesh,
         opacity: number,
@@ -1813,11 +1536,30 @@ function MechanicalMemoryScene({
         mesh.renderOrder = mesh.name.includes('SIGNAL') || mesh.name.includes('PRACTICAL') ? 2 : 0
       }
 
-      environment.traverse((object) => {
+      environment?.traverse((object) => {
         if (!(object instanceof THREE.Mesh)) return
         object.receiveShadow = true
         object.castShadow = false
 
+        if (object.name.startsWith('FAR_')) {
+          // Far-field megastructure stays opaque so fog, not alpha, softens it.
+          object.receiveShadow = false
+          const material = (Array.isArray(object.material) ? object.material[0] : object.material).clone()
+          if (material instanceof THREE.MeshStandardMaterial) {
+            if (object.name.startsWith('FAR_SIGNAL_')) {
+              material.emissiveIntensity *= object.name.endsWith('CYAN') ? 0.72 : 1.05
+            } else {
+              // Dark architecture that still catches the key/rim, so it reads
+              // as a vault wall in the fog instead of disappearing into it.
+              material.color.setHex(0x141c22)
+              material.roughness = 0.58
+              material.metalness = 0.78
+              material.envMapIntensity = 0.28
+            }
+          }
+          object.material = material
+          return
+        }
         if (object.name.startsWith('BACKBONE_FILAMENT_')) refineEnvironmentMaterial(object, 0.62, undefined, 1.18)
         else if (object.name.startsWith('BACKBONE_BRIDGE_')) refineEnvironmentMaterial(object, 0.44, 0x101820)
         else if (object.name.startsWith('BACKBONE_')) refineEnvironmentMaterial(object, 0.78, 0x0a1117)
@@ -1831,17 +1573,18 @@ function MechanicalMemoryScene({
         else if (object.name.startsWith('CORE_ORBIT_')) refineEnvironmentMaterial(object, 0.5, undefined, 1.05)
         else if (object.name.startsWith('CROWN_')) refineEnvironmentMaterial(object, 0.54, 0x27343b)
         else if (object.name.startsWith('PORTAL_')) refineEnvironmentMaterial(object, 0.62, 0x111920)
-        else if (object.name.startsWith('PRISM_SHARD_')) refineEnvironmentMaterial(object, 0.28, undefined, 0.72)
       })
-      world.add(environment)
+      world.remove(robot)
       robotRoot = new THREE.Group()
       world.add(robotRoot)
       animatedParts = configureRobotAssembly(robot, robotRoot, compact)
       assemblyAura = createAssemblyAura(compact)
       assemblyAura.material.uniforms.uPixelRatio.value = activePixelRatio
       robotRoot.add(assemblyAura.points)
+      forceRender = true
       onStatus('ready')
     }).catch((error) => {
+      window.clearTimeout(loadingTimeout)
       console.error('Mechanical memory scene failed to load', error)
       if (!cancelled) onStatus('error')
     })
@@ -1866,6 +1609,7 @@ function MechanicalMemoryScene({
     }
     const setHoveredCard = (next: CardVisual | null) => {
       if (hoveredCard === next) return
+      forceRender = true
       if (hoveredCard) {
         hoveredCard.accentMaterial.emissiveIntensity = hoveredCard.baseEmissiveIntensity
         hoveredCard.photoMaterial.uniforms.uHover.value = 0
@@ -1908,10 +1652,12 @@ function MechanicalMemoryScene({
       camera.aspect = width / height
       camera.fov = compact ? 54 : 46
       camera.updateProjectionMatrix()
+      forceRender = true
       cloudMaterial.uniforms.uPixelRatio.value = pixelRatio
       particleMaterial.uniforms.uPixelRatio.value = pixelRatio
       if (assemblyAura) assemblyAura.material.uniforms.uPixelRatio.value = pixelRatio
     }
+    let forceRender = true
     const resizeObserver = new ResizeObserver(resize)
     resizeObserver.observe(host)
     resize()
@@ -1921,14 +1667,18 @@ function MechanicalMemoryScene({
     let qualityDuration = 0
     let previousQualityFrame = performance.now()
     let qualityCooldownFrames = 0
-    let nextRenderAt = performance.now()
+    let previousScheduleFrame = performance.now()
+    let renderAccumulator = renderStep
     let shadowFrame = 0
     let lastAssemblyProgress = -1
+    let lastRenderedProgress = -1
+    let elapsed = 0
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       visible = Boolean(entry?.isIntersecting)
       if (visible) {
         const now = performance.now()
-        nextRenderAt = now
+        previousScheduleFrame = now
+        renderAccumulator = renderStep
         previousQualityFrame = now
         qualityFrames = 0
         qualityDuration = 0
@@ -1939,15 +1689,23 @@ function MechanicalMemoryScene({
     const render = () => {
       if (cancelled) return
       frame = requestAnimationFrame(render)
-      if (!visible) return
+      if (!visible || document.hidden || renderer.getContext().isContextLost()) {
+        previousScheduleFrame = performance.now()
+        return
+      }
 
       const now = performance.now()
-      if (compact && now + 0.75 < nextRenderAt) return
-      if (compact) {
-        const renderStep = 1000 / 60
-        nextRenderAt = now > nextRenderAt + 100 ? now + renderStep : nextRenderAt + renderStep
-      }
-      const elapsed = (now - startTime) / 1000
+      const scheduleDelta = Math.min(100, Math.max(0, now - previousScheduleFrame))
+      previousScheduleFrame = now
+      renderAccumulator += scheduleDelta
+      if (renderAccumulator + 0.5 < renderStep) return
+      renderAccumulator %= renderStep
+      const motionPaused = reducedMotion || pausedRef.current
+      const rawProgress = clamp(progress.get())
+      if (motionPaused && !forceRender && Math.abs(rawProgress - lastRenderedProgress) < 0.00001) return
+      if (!motionPaused) elapsed += Math.min(scheduleDelta, 50) / 1000
+      forceRender = false
+      lastRenderedProgress = rawProgress
       if (compact && robotRoot) {
         if (qualityCooldownFrames > 0) {
           qualityCooldownFrames -= 1
@@ -1960,9 +1718,9 @@ function MechanicalMemoryScene({
         if (qualityFrames >= 90) {
           const averageFrameTime = qualityDuration / Math.max(1, qualityFrames - 1)
           let nextQualityScale = runtimeQualityScale
-          if (averageFrameTime > 25) nextQualityScale -= 0.1
-          else if (averageFrameTime > 19.5) nextQualityScale -= 0.05
-          else if (averageFrameTime < 16.2) nextQualityScale += 0.03
+          if (averageFrameTime > renderStep * 1.5) nextQualityScale -= 0.1
+          else if (averageFrameTime > renderStep * 1.18) nextQualityScale -= 0.05
+          else if (averageFrameTime < renderStep * 0.98) nextQualityScale += 0.03
           nextQualityScale = THREE.MathUtils.clamp(nextQualityScale, minimumQualityScale, 1)
           if (Math.abs(nextQualityScale - runtimeQualityScale) > 0.005) {
             runtimeQualityScale = nextQualityScale
@@ -1974,7 +1732,6 @@ function MechanicalMemoryScene({
           previousQualityFrame = now
         }
       }
-      const rawProgress = clamp(progress.get())
       // `progress` is already spring-smoothed by Framer Motion. Keep the 3D
       // camera, cards, DOM chapter and robot on the same linear timeline so an
       // active competition never displays the previous event's card.
@@ -2065,10 +1822,8 @@ function MechanicalMemoryScene({
         }
       })
 
-      if (compact) {
-        renderer.shadowMap.needsUpdate = shadowFrame % 2 === 0
-        shadowFrame += 1
-      }
+      renderer.shadowMap.needsUpdate = motionPaused || shadowFrame % (compact ? 3 : 2) === 0
+      shadowFrame += 1
       if (composer) composer.render()
       else renderer.render(scene, camera)
     }
@@ -2076,16 +1831,20 @@ function MechanicalMemoryScene({
 
     return () => {
       cancelled = true
+      window.clearTimeout(loadingTimeout)
+      delete canvas.dataset.renderTarget
       cancelAnimationFrame(frame)
       resizeObserver.disconnect()
       visibilityObserver.disconnect()
       canvas.removeEventListener('pointermove', onCardPointerMove)
       canvas.removeEventListener('pointerleave', onCardPointerLeave)
       canvas.removeEventListener('click', onCardClick)
+      canvas.removeEventListener('webglcontextlost', onContextLost)
       disposeObject(world)
       hdrTarget?.dispose()
       roomTarget.dispose()
       pmremGenerator.dispose()
+      composer.passes.forEach((pass) => pass.dispose())
       composer?.dispose()
       renderer.dispose()
     }
@@ -2103,6 +1862,9 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
   const reducedMotion = useReducedMotion() ?? false
   const [status, setStatus] = useState<SceneStatus>('loading')
   const [activeIndex, setActiveIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const [sceneVersion, setSceneVersion] = useState(0)
+  const [phase, setPhase] = useState<'intro' | 'journey' | 'end'>('intro')
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
   const progress = useSpring(scrollYProgress, reducedMotion
     ? { stiffness: 1000, damping: 1000, mass: 0.01 }
@@ -2113,6 +1875,8 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
   const cueOpacity = useTransform(progress, [0, 0.04, 0.1], [1, 1, 0])
 
   useMotionValueEvent(progress, 'change', (value) => {
+    const nextPhase = value < 0.105 ? 'intro' : value > 0.985 ? 'end' : 'journey'
+    setPhase((current) => current === nextPhase ? current : nextPhase)
     const nearest = MEMORY_ENTRIES.reduce((bestIndex, entry, index) => {
       const bestDistance = Math.abs(MEMORY_ENTRIES[bestIndex].t - value)
       return Math.abs(entry.t - value) < bestDistance ? index : bestIndex
@@ -2121,12 +1885,19 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
   })
 
   const progressLabel = useMemo(() => String(activeIndex + 1).padStart(2, '0'), [activeIndex])
+  const titleShown = status !== 'loading' || reducedMotion
+  const titleReveal = (delay: number, kind: 'mask' | 'fade' = 'mask') => ({
+    initial: reducedMotion ? false : kind === 'mask' ? { y: '108%' } : { opacity: 0, y: 14 },
+    animate: titleShown ? (kind === 'mask' ? { y: 0 } : { opacity: 1, y: 0 }) : undefined,
+    transition: { duration: kind === 'mask' ? 1.3 : 1, delay, ease: [0.16, 1, 0.3, 1] as const },
+  })
 
   const jumpTo = (target: number) => {
     const section = sectionRef.current
     if (!section) return
     const top = window.scrollY + section.getBoundingClientRect().top
-    const travel = Math.max(0, section.offsetHeight - window.innerHeight)
+    const sticky = section.querySelector<HTMLElement>('.mechanical-memory__sticky')
+    const travel = Math.max(0, section.offsetHeight - (sticky?.offsetHeight ?? window.innerHeight))
     window.scrollTo({ top: top + travel * target, behavior: reducedMotion ? 'auto' : 'smooth' })
   }
 
@@ -2137,29 +1908,30 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
   }
 
   return (
-    <section ref={sectionRef} className={`mechanical-memory mechanical-memory--${status}`} aria-label="KLZC 机械记忆档案 / Mechanical memory archive">
+    <section ref={sectionRef} className={`mechanical-memory mechanical-memory--${status}`} data-phase={phase} aria-label="KLZC 机械记忆档案 / Mechanical memory archive">
+      <span id="contact" className="mechanical-memory__contact-anchor" data-scroll-end="true" aria-hidden="true" />
       <div className="mechanical-memory__sticky">
         <MechanicalMemoryScene
+          key={sceneVersion}
           progress={progress}
           reducedMotion={reducedMotion}
+          paused={paused}
           onStatus={setStatus}
           onNavigate={navigate}
         />
         <div className="mechanical-memory__shade" aria-hidden="true" />
+        <div className="mechanical-memory__letterbox" aria-hidden="true"><i /><i /></div>
 
-        <nav className="mechanical-memory__quick-links" aria-label="快捷导航 / Featured navigation">
-          <a href="/projects" onClick={(event) => routeTo(event, '/projects')}><span>项目</span><small>Work</small></a>
-          <a href="/profile" onClick={(event) => routeTo(event, '/profile')}><span>关于我</span><small>Profile</small></a>
-          <button type="button" onClick={() => jumpTo(1)}><span>联系</span><small>Contact</small></button>
-        </nav>
-
-        <motion.header className="mechanical-memory__intro" style={{ opacity: introOpacity, y: introY }}>
-          <p>CHENG ZHANG / UOA COMPUTER SCIENCE</p>
-          <h1><span>FROM CHENGDU</span><span>TO AUCKLAND</span></h1>
-          <div>
+        <motion.header className="mechanical-memory__intro" inert={phase !== 'intro'} style={{ opacity: introOpacity, y: introY }}>
+          <motion.p {...titleReveal(0.1, 'fade')}>Cheng Zhang <span aria-hidden="true">/</span> UoA Computer Science</motion.p>
+          <h1>
+            <span className="mechanical-memory__line"><motion.span {...titleReveal(0.2)}>From Chengdu</motion.span></span>
+            <span className="mechanical-memory__line mechanical-memory__line--outline"><motion.span {...titleReveal(0.34)}>to Auckland</motion.span></span>
+          </h1>
+          <motion.div {...titleReveal(0.7, 'fade')}>
             <strong>2019—NOW</strong>
-            <span>计算机科学本科生 · 约七年 VEX 机器人经历 · 软件与 AI 工具。</span>
-          </div>
+            <span>一些过去和现在的记录。<em>A record of then and now.</em></span>
+          </motion.div>
         </motion.header>
 
         <div className="mechanical-memory__rail" aria-label="记忆章节 / Memory chapters">
@@ -2182,22 +1954,34 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
         </div>
 
         <motion.div className="mechanical-memory__cue" style={{ opacity: cueOpacity }} aria-hidden="true">
-          <span>向下滑动 / Scroll to descend</span>
+          <span>向下滚动 / Scroll</span>
           <i />
         </motion.div>
 
-        <motion.div id="contact" className="mechanical-memory__end" style={{ opacity: endOpacity }}>
-          <p>序章完成 / PROLOGUE COMPLETE · 06</p>
-          <h2>从这里，进入完整故事。</h2>
-          <span>接下来沿着五个章节，继续看地点、机器人、比赛、项目与现在。</span>
+        <motion.div className="mechanical-memory__end-scrim" aria-hidden="true" style={{ opacity: status === 'error' ? 1 : endOpacity }} />
+        <motion.div className="mechanical-memory__end" inert={phase !== 'end' && status !== 'error'} style={{ opacity: status === 'error' ? 1 : endOpacity }}>
+          <p>记录 / Records · 06</p>
+          <h2>继续浏览。</h2>
+          <em>The rest of the reel</em>
+          <span>后面的页面按地点、比赛和项目整理。</span>
           <div>
-            <a className="mechanical-memory__primary-action" href="/atlas" onClick={(event) => routeTo(event, '/atlas')}>
-              <span>从第一章开始<small>Start with the atlas</small></span><ArrowRight size={18} aria-hidden="true" />
+            <a className="mechanical-memory__primary-action" href="/atlas" onClick={(event) => routeTo(event, '/atlas')} data-cursor="地点 Atlas">
+              <span>查看地点<small>View places</small></span><ArrowRight size={18} aria-hidden="true" />
             </a>
-            <a href="/projects" onClick={(event) => routeTo(event, '/projects')}><span>直接看项目<small>Jump to work</small></span></a>
+            <a href="/projects" onClick={(event) => routeTo(event, '/projects')}><span>查看项目<small>View projects</small></span></a>
             <a href="mailto:masterzc624@gmail.com"><span>联系我<small>Email me</small></span></a>
           </div>
         </motion.div>
+
+        <div className="mechanical-memory__controls">
+          <span>74000M <span aria-hidden="true">/</span> MECHANICAL MEMORY</span>
+          {!reducedMotion && status === 'ready' ? (
+            <button type="button" aria-pressed={paused} onClick={() => setPaused(!paused)} aria-label={paused ? '继续环境动效 / Resume ambient motion' : '暂停环境动效 / Pause ambient motion'}>
+              {paused ? <Play size={14} /> : <Pause size={14} />}
+              {paused ? '继续动效' : '暂停动效'}
+            </button>
+          ) : null}
+        </div>
 
         {status === 'loading' && (
           <div className="mechanical-memory__loading" role="status">
@@ -2209,6 +1993,7 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
           <div className="mechanical-memory__loading mechanical-memory__loading--error" role="status">
             <span>3D 场景暂不可用 / Scene unavailable</span>
             <small>仍可通过导航浏览全部章节 / The archive remains available through navigation.</small>
+            <button type="button" onClick={() => { setStatus('loading'); setSceneVersion((version) => version + 1) }}><RotateCcw size={15} /> 重试 3D / Retry</button>
           </div>
         )}
       </div>
