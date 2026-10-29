@@ -32,3 +32,6 @@ blender/
 design-audit-*/
 design-qa.md
 klzc-portfolio/
+
+.vercel
+.env*.local

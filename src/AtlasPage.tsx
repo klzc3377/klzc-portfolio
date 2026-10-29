@@ -82,7 +82,7 @@ const locations: AtlasLocation[] = [
     coordinates: '31.2304 N / 121.4737 E',
     lngLat: [121.4737, 31.2304],
     callout: [156, 27],
-    focus: { zoom: 11.8, pitch: 42, bearing: -16, zone: 'INNER RING / CORE' },
+    focus: { zoom: 13.1, pitch: 58, bearing: -16, zone: 'INNER RING / CORE' },
     copy: '2023 National VEX Robotics Elite Competition. First prize, high-school division.',
     copyZh: '2023 年，全国 VEX 机器人精英赛，高中组一等奖。',
     image: '/assets/atlas-shanghai.webp',
@@ -97,7 +97,7 @@ const locations: AtlasLocation[] = [
     coordinates: '36.0671 N / 120.3826 E',
     lngLat: [120.3826, 36.0671],
     callout: [150, 50],
-    focus: { zoom: 11.7, pitch: 39, bearing: 17, zone: 'COASTAL CORE' },
+    focus: { zoom: 13.0, pitch: 55, bearing: 17, zone: 'COASTAL CORE' },
     copy: 'The 15th VEX Asia Championship in 2022.',
     copyZh: '2022 年，第十五届 VEX 亚洲锦标赛。',
     image: '/assets/atlas-qingdao.webp',
@@ -112,7 +112,7 @@ const locations: AtlasLocation[] = [
     coordinates: '29.5630 N / 106.5516 E',
     lngLat: [106.5516, 29.563],
     callout: [70, 24],
-    focus: { zoom: 11.65, pitch: 43, bearing: -24, zone: 'CENTRAL PENINSULA' },
+    focus: { zoom: 12.95, pitch: 59, bearing: -24, zone: 'CENTRAL PENINSULA' },
     copy: 'The 2020 VEX IQ China National Final and a later China–Canada VEX event.',
     copyZh: '2020 年 VEX IQ 中国总决赛，以及之后的中国—加拿大 VEX 比赛。',
     image: '/assets/atlas-chongqing.webp',
@@ -127,7 +127,7 @@ const locations: AtlasLocation[] = [
     coordinates: '20.0440 N / 110.1983 E',
     lngLat: [110.1983, 20.044],
     callout: [82, 8],
-    focus: { zoom: 10.7, pitch: 35, bearing: -12, zone: 'HAIKOU NODE' },
+    focus: { zoom: 12.0, pitch: 51, bearing: -12, zone: 'HAIKOU NODE' },
     copy: 'A few photographs from a robotics competition.',
     copyZh: '机器人比赛时留下的几张照片。',
     image: '/assets/atlas-hainan.webp',
@@ -142,7 +142,7 @@ const locations: AtlasLocation[] = [
     coordinates: '30.5728 N / 104.0668 E',
     lngLat: [104.0668, 30.5728],
     callout: [73, 49],
-    focus: { zoom: 11.6, pitch: 40, bearing: 21, zone: 'CITY CENTRE' },
+    focus: { zoom: 12.9, pitch: 56, bearing: 21, zone: 'CITY CENTRE' },
     copy: 'Where I first started VEX robotics.',
     copyZh: '开始接触 VEX 机器人的地方。',
   },
@@ -155,7 +155,7 @@ const locations: AtlasLocation[] = [
     coordinates: '36.8485 S / 174.7633 E',
     lngLat: [174.7633, -36.8485],
     callout: [148, -27],
-    focus: { zoom: 11.55, pitch: 40, bearing: -28, zone: 'CENTRAL ISTHMUS' },
+    focus: { zoom: 12.85, pitch: 56, bearing: -28, zone: 'CENTRAL ISTHMUS' },
     copy: 'Where I currently live and study Computer Science.',
     copyZh: '现在生活和学习的地方。',
     image: '/assets/uoa-campus.webp',
@@ -170,7 +170,7 @@ const locations: AtlasLocation[] = [
     coordinates: '37.5665 N / 126.9780 E',
     lngLat: [126.978, 37.5665],
     callout: [163, 57],
-    focus: { zoom: 11.7, pitch: 40, bearing: -12, zone: 'SEOUL CORE' },
+    focus: { zoom: 13.0, pitch: 56, bearing: -12, zone: 'SEOUL CORE' },
     copy: 'My first VEX competition outside China, in 2019.',
     copyZh: '2019 年，第一次去国外参加 VEX 比赛。',
   },
@@ -219,6 +219,112 @@ function showBasemapLabels(map: VectorMap, show: boolean) {
       map.setLayoutProperty(layer.id, 'visibility', show ? 'visible' : 'none')
     }
   }
+}
+
+// The order the places entered the story; the route is drawn through them.
+const ROUTE_ORDER: AtlasLocationId[] = ['chengdu', 'seoul', 'chongqing', 'qingdao', 'shanghai', 'hainan', 'auckland']
+
+/** Great-circle points between two [lng, lat] pairs, so long legs bow like flight paths. */
+function greatCircle(from: [number, number], to: [number, number], steps = 48) {
+  const rad = Math.PI / 180
+  const toVector = ([lng, lat]: [number, number]) => [
+    Math.cos(lat * rad) * Math.cos(lng * rad),
+    Math.cos(lat * rad) * Math.sin(lng * rad),
+    Math.sin(lat * rad),
+  ]
+  const a = toVector(from)
+  const b = toVector(to)
+  const omega = Math.acos(Math.min(1, Math.max(-1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])))
+  if (omega < 1e-6) return [from, to]
+  return Array.from({ length: steps + 1 }, (_, index) => {
+    const t = index / steps
+    const wa = Math.sin((1 - t) * omega) / Math.sin(omega)
+    const wb = Math.sin(t * omega) / Math.sin(omega)
+    const [x, y, z] = [0, 1, 2].map((k) => a[k] * wa + b[k] * wb)
+    return [Math.atan2(y, x) / rad, Math.atan2(z, Math.hypot(x, y)) / rad] as [number, number]
+  })
+}
+
+function setPaint(map: VectorMap, layer: string, property: string, value: unknown) {
+  if (map.getLayer(layer)) map.setPaintProperty(layer, property, value)
+}
+
+/**
+ * Regrade the stock dark basemap into the site's film palette: ink water,
+ * warm charcoal land, faint sodium-lit roads, and extruded buildings that
+ * catch a low key light once the camera tilts into a city.
+ */
+function gradeBasemap(map: VectorMap) {
+  setPaint(map, 'background', 'background-color', '#08090a')
+  setPaint(map, 'water', 'fill-color', '#04080b')
+  setPaint(map, 'waterway', 'line-color', '#0a1418')
+  for (const layer of ['landuse_residential', 'landuse_park', 'landcover_wood', 'landcover_glacier', 'landcover_ice_shelf']) {
+    setPaint(map, layer, 'fill-color', '#0d0e0e')
+    setPaint(map, layer, 'fill-opacity', 0.7)
+  }
+  for (const layer of ['highway_motorway_inner', 'highway_motorway_subtle', 'highway_major_inner', 'highway_major_subtle']) {
+    setPaint(map, layer, 'line-color', '#3b3226')
+  }
+  for (const layer of ['highway_minor', 'highway_path', 'highway_major_casing', 'highway_motorway_casing']) {
+    setPaint(map, layer, 'line-color', '#1f1c18')
+  }
+  for (const layer of ['railway', 'railway_dashline', 'railway_minor', 'railway_transit']) {
+    setPaint(map, layer, 'line-color', '#1c1b19')
+  }
+  for (const layer of ['boundary_country_z0-4', 'boundary_country_z5-', 'boundary_state']) {
+    setPaint(map, layer, 'line-color', '#34373a')
+    setPaint(map, layer, 'line-opacity', 0.55)
+  }
+  if (map.getLayer('building')) map.setLayoutProperty('building', 'visibility', 'none')
+  map.addLayer({
+    id: 'atlas-buildings-3d',
+    type: 'fill-extrusion',
+    source: 'openmaptiles',
+    'source-layer': 'building',
+    minzoom: 12.5,
+    paint: {
+      'fill-extrusion-color': '#1c1b19',
+      'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
+      'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
+      'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 12.5, 0, 13.4, 0.92],
+      'fill-extrusion-vertical-gradient': true,
+    },
+  })
+  map.setLight({ anchor: 'map', color: '#f2d6aa', intensity: 0.42, position: [1.3, 215, 38] })
+  try {
+    map.setSky({
+      'sky-color': '#07090b',
+      'horizon-color': '#1d1913',
+      'fog-color': '#0a0b0c',
+      'sky-horizon-blend': 0.6,
+      'horizon-fog-blend': 0.55,
+      'fog-ground-blend': 0.4,
+    })
+  } catch {
+    // Older renderers simply keep a flat horizon.
+  }
+
+  const route = ROUTE_ORDER
+    .map((id) => locations.find((location) => location.id === id)!)
+    .flatMap((location, index, ordered) => index === 0 ? [] : greatCircle(ordered[index - 1].lngLat, location.lngLat))
+  map.addSource('atlas-route', {
+    type: 'geojson',
+    data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: route } },
+  })
+  map.addLayer({
+    id: 'atlas-route-glow',
+    type: 'line',
+    source: 'atlas-route',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#e9be78', 'line-width': 7, 'line-blur': 6, 'line-opacity': 0.16 },
+  })
+  map.addLayer({
+    id: 'atlas-route',
+    type: 'line',
+    source: 'atlas-route',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#e9be78', 'line-width': 1.2, 'line-opacity': 0.75, 'line-dasharray': [1.5, 2.5] },
+  })
 }
 
 function addArchiveLayers(map: VectorMap) {
@@ -347,6 +453,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
     map.on('load', () => {
       if (disposed) return
       window.clearTimeout(timeoutId)
+      gradeBasemap(map)
       addArchiveLayers(map)
       showBasemapLabels(map, false)
       updateLabelPositions()
@@ -436,8 +543,8 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
       zoom: location.focus.zoom,
       pitch: reducedMotion ? 0 : location.focus.pitch,
       bearing: location.focus.bearing,
-      duration: reducedMotion ? 0 : 1700,
-      curve: 1.25,
+      duration: reducedMotion ? 0 : 2600,
+      curve: 1.55,
       essential: false,
     })
     if (reducedMotion || !map.isMoving()) finishFlight()

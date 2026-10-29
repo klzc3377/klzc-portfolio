@@ -131,9 +131,19 @@
   will-change: transform;
 }
 
+/* Second line of the title card: a warm italic serif against the condensed
+   caps, the same pairing the memory cards use for their years. */
 .mechanical-memory__line--outline > span {
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(236, 231, 220, 0.72);
+  margin-top: 0.04em;
+  color: #e9be78;
+  font-family: var(--serif);
+  font-size: 0.86em;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 0.95;
+  text-transform: none;
+  text-shadow: 0 0 40px rgba(233, 190, 120, 0.18);
 }
 
 .mechanical-memory__intro > div {

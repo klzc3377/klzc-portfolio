@@ -21,6 +21,7 @@ import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
+import { ARENA_URL, dressArena } from './scene/arena'
 import { configureRobotAssembly, applyAssembly, type AnimatedPart } from './scene/robotAssembly'
 import './MechanicalMemoryExperience.css'
 
@@ -54,7 +55,6 @@ type CardVisual = {
   t: number
 }
 
-const ENVIRONMENT_URL = '/models/v5/mechanical-memory-environment.glb'
 const ROBOT_URL = '/models/robot-74000m-assembly.glb'
 const DESKTOP_TARGET_FRAME_RATE = 60
 const DESKTOP_PIXEL_RATIO_CAP = 1.5
@@ -67,7 +67,9 @@ const CINEMATIC_SHADER = {
     uProgress: { value: 0 },
     uGrain: { value: 0.006 },
     uAberration: { value: 0.00024 },
-    uVignette: { value: 0.26 },
+    uVignette: { value: 0.34 },
+    uStreak: { value: 0.16 },
+    uTexel: { value: new THREE.Vector2(1 / 1920, 1 / 1080) },
   },
   vertexShader: `
     varying vec2 vUv;
@@ -83,10 +85,18 @@ const CINEMATIC_SHADER = {
     uniform float uGrain;
     uniform float uAberration;
     uniform float uVignette;
+    uniform float uStreak;
+    uniform vec2 uTexel;
     varying vec2 vUv;
 
     float random(vec2 p) {
       return fract(sin(dot(p, vec2(12.9898, 78.233)) + uTime * 13.17) * 43758.5453);
+    }
+
+    vec3 highlights(vec2 uv) {
+      vec3 c = texture2D(tDiffuse, uv).rgb;
+      float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+      return c * smoothstep(0.85, 2.4, l);
     }
 
     void main() {
@@ -97,29 +107,46 @@ const CINEMATIC_SHADER = {
       color.r = texture2D(tDiffuse, vUv + offset).r;
       color.g = texture2D(tDiffuse, vUv).g;
       color.b = texture2D(tDiffuse, vUv - offset).b;
-      float vignette = 1.0 - smoothstep(0.14, 0.58, edge) * uVignette;
+
+      // Anamorphic flare: a thin horizontal smear of only the hottest pixels,
+      // the signature of a 2x squeeze lens. Taps spread geometrically so eight
+      // per side reach ~22% of the frame width.
+      if (uStreak > 0.0) {
+        vec3 streak = vec3(0.0);
+        float spread = uTexel.x * 6.0;
+        float weightSum = 0.0;
+        for (int i = 1; i <= 8; i++) {
+          float fi = float(i);
+          float dist = spread * fi * fi;
+          float w = exp(-fi * 0.42);
+          streak += (highlights(vUv + vec2(dist, 0.0)) + highlights(vUv - vec2(dist, 0.0))) * w;
+          weightSum += 2.0 * w;
+        }
+        streak /= weightSum;
+        float streakLum = dot(streak, vec3(0.333));
+        color += mix(vec3(streakLum), vec3(0.42, 0.72, 0.86) * streakLum * 1.6, 0.7) * uStreak * 2.2;
+      }
+
+      float vignette = 1.0 - smoothstep(0.12, 0.6, edge) * uVignette;
       color *= vignette;
       float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-      vec3 shadowTint = vec3(0.9, 0.98, 1.04);
-      vec3 highlightTint = vec3(1.06, 1.0, 0.93);
-      color *= mix(shadowTint, highlightTint, smoothstep(0.08, 0.88, luminance));
-      // Broad asymmetric light pools replace the previous uniform black void.
-      // Their palette changes by chapter, while the luminance mask protects UI
-      // type and the bright robot highlights from being colour-washed.
+      // Print-film grade: pull saturation back a touch, then split-tone teal
+      // shadows against warm highlights instead of painting coloured blobs.
+      color = mix(vec3(luminance), color, 0.86);
+      float highlightMix = smoothstep(0.05, 0.9, luminance);
+      color *= mix(vec3(0.88, 0.99, 1.05), vec3(1.07, 1.0, 0.9), highlightMix);
+      // One soft key pool from frame right (warm) and a cooler fill from the
+      // left keep the void from going flat black without stealing the subject.
       float phase = uProgress * 6.2831853;
-      vec3 cyan = vec3(0.12, 0.7, 0.78);
-      vec3 violet = vec3(0.38, 0.2, 0.72);
-      vec3 magenta = vec3(0.8, 0.13, 0.42);
-      vec3 amber = vec3(0.82, 0.35, 0.12);
-      vec3 leftColor = mix(violet, cyan, 0.5 + 0.5 * sin(phase * 0.72 + 0.8));
-      vec3 rightColor = mix(magenta, amber, 0.5 + 0.5 * sin(phase * 0.91 + 2.1));
-      vec2 leftVector = (vUv - vec2(0.08, 0.68)) / vec2(0.54, 0.68);
-      vec2 rightVector = (vUv - vec2(0.92, 0.34)) / vec2(0.48, 0.62);
-      float leftPool = exp(-dot(leftVector, leftVector) * 2.25);
-      float rightPool = exp(-dot(rightVector, rightVector) * 2.55);
-      float shadowRoom = 1.0 - smoothstep(0.08, 0.72, luminance);
-      color += (leftColor * leftPool * 0.115 + rightColor * rightPool * 0.09) * shadowRoom;
-      color += vec3(0.006, 0.012, 0.017) * shadowRoom;
+      vec3 warm = mix(vec3(0.62, 0.3, 0.12), vec3(0.58, 0.4, 0.2), 0.5 + 0.5 * sin(phase * 0.8 + 1.4));
+      vec3 cool = vec3(0.1, 0.34, 0.4);
+      vec2 leftVector = (vUv - vec2(0.06, 0.7)) / vec2(0.55, 0.7);
+      vec2 rightVector = (vUv - vec2(0.94, 0.36)) / vec2(0.5, 0.62);
+      float leftPool = exp(-dot(leftVector, leftVector) * 2.4);
+      float rightPool = exp(-dot(rightVector, rightVector) * 2.6);
+      float shadowRoom = 1.0 - smoothstep(0.06, 0.6, luminance);
+      color += (cool * leftPool * 0.07 + warm * rightPool * 0.06) * shadowRoom;
+      color += vec3(0.004, 0.008, 0.01) * shadowRoom;
       float grain = (random(vUv * vec2(1920.0, 1080.0)) - 0.5) * uGrain * (0.55 + luminance * 0.45);
       color += grain;
       gl_FragColor = vec4(color, 1.0);
@@ -280,19 +307,19 @@ function createParticles(compact: boolean) {
   // Build a layered, soft-focus dust volume instead of a uniform star field.
   // The dense knots sit behind the helix and give the scene the iridescent,
   // photographic depth of the reference without competing with the cards.
-  const count = compact ? 4200 : 11000
+  const count = compact ? 2000 : 4600
   const positions = new Float32Array(count * 3)
   const colors = new Float32Array(count * 3)
   const seeds = new Float32Array(count)
   const sizes = new Float32Array(count)
   const alphas = new Float32Array(count)
   const paletteBands = [
-    [new THREE.Color(0x63dbea), new THREE.Color(0x3e78bd)],
-    [new THREE.Color(0x8f65d8), new THREE.Color(0x63dbea)],
-    [new THREE.Color(0xe03a72), new THREE.Color(0x8f65d8)],
-    [new THREE.Color(0x39c7b4), new THREE.Color(0xff5f99)],
-    [new THREE.Color(0x7756e8), new THREE.Color(0xe03a72)],
-    [new THREE.Color(0xe06a35), new THREE.Color(0x4c8be0)],
+    [new THREE.Color(0x6fb8c4), new THREE.Color(0x3f6f86)],
+    [new THREE.Color(0xd9a45a), new THREE.Color(0x6fb8c4)],
+    [new THREE.Color(0xd0603f), new THREE.Color(0x8a6a4c)],
+    [new THREE.Color(0x5fa9b3), new THREE.Color(0xe08a4c)],
+    [new THREE.Color(0xc9573a), new THREE.Color(0x4f8796)],
+    [new THREE.Color(0xe6b06a), new THREE.Color(0x5b8fa6)],
   ]
   const silver = new THREE.Color(0xb9cbd0)
   // Pull the chapter palette toward warm projector dust so the volume reads as
@@ -325,7 +352,7 @@ function createParticles(compact: boolean) {
     const colorBand = paletteBands[clustered
       ? clusterBand
       : Math.min(paletteBands.length - 1, Math.floor(vertical * paletteBands.length))]
-    const color = graded.copy(seed < 0.67 ? colorBand[0] : seed < 0.92 ? colorBand[1] : silver).lerp(dust, 0.42)
+    const color = graded.copy(seed < 0.67 ? colorBand[0] : seed < 0.92 ? colorBand[1] : silver).lerp(dust, 0.78)
     colors[index * 3] = color.r
     colors[index * 3 + 1] = color.g
     colors[index * 3 + 2] = color.b
@@ -431,12 +458,12 @@ function createVolumetricClouds(compact: boolean) {
   const sizes = new Float32Array(count)
   const alphas = new Float32Array(count)
   const palettes = [
-    [new THREE.Color(0x2caec2), new THREE.Color(0x4f67c8)],
-    [new THREE.Color(0x7753c9), new THREE.Color(0x31b7c4)],
-    [new THREE.Color(0xc52f72), new THREE.Color(0x6f4dc1)],
-    [new THREE.Color(0x2aa998), new THREE.Color(0xd94885)],
-    [new THREE.Color(0x654dcc), new THREE.Color(0xc42c67)],
-    [new THREE.Color(0xc55b32), new THREE.Color(0x3974c5)],
+    [new THREE.Color(0x2f8c9c), new THREE.Color(0x35566e)],
+    [new THREE.Color(0xa8743c), new THREE.Color(0x2f8c9c)],
+    [new THREE.Color(0xa8432c), new THREE.Color(0x4a3a30)],
+    [new THREE.Color(0x2b8a86), new THREE.Color(0xb0602f)],
+    [new THREE.Color(0x3c5f70), new THREE.Color(0xa8432c)],
+    [new THREE.Color(0xb07a3a), new THREE.Color(0x356a86)],
   ]
 
   for (let index = 0; index < count; index += 1) {
@@ -541,10 +568,10 @@ function createAssemblyAura(compact: boolean) {
   const seeds = new Float32Array(count)
   const sizes = new Float32Array(count)
   const alphas = new Float32Array(count)
-  const cyan = new THREE.Color(0x64d3df)
-  const red = new THREE.Color(0xe23872)
-  const violet = new THREE.Color(0x8362d2)
-  const pink = new THREE.Color(0xf064a0)
+  const cyan = new THREE.Color(0x7cc3cc)
+  const red = new THREE.Color(0xd8573c)
+  const violet = new THREE.Color(0xe0a35c)
+  const pink = new THREE.Color(0xf2d2a0)
 
   for (let index = 0; index < count; index += 1) {
     const seed = seededNoise(index + 1301)
@@ -648,10 +675,10 @@ function createAssemblyAura(compact: boolean) {
 function createCinematicLightField(compact: boolean) {
   const material = new THREE.ShaderMaterial({
     uniforms: {
-      uAccent: { value: new THREE.Color(0xff3651) },
-      uCool: { value: new THREE.Color(0x63dbea) },
+      uAccent: { value: new THREE.Color(0xe0703a) },
+      uCool: { value: new THREE.Color(0x5fb3c2) },
       uTime: { value: 0 },
-      uIntensity: { value: 0.68 },
+      uIntensity: { value: 0.42 },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -716,137 +743,151 @@ function timelineOrbitOffset(t: number, compact: boolean) {
   return THREE.MathUtils.lerp(-0.36, -0.32, t)
 }
 
-function timelinePoint(t: number, radius: number, yOffset = 0, orbitOffset = 0.5) {
-  const angle = -0.56 + orbitOffset - t * TIMELINE_TURNS * Math.PI * 2
-  return new THREE.Vector3(
-    Math.cos(angle) * radius,
-    6.2 - 35.4 * t + yOffset,
-    Math.sin(angle) * radius,
-  )
+const CARD_FONTS = {
+  serif: '"Instrument Serif", Georgia, serif',
+  display: '"Barlow Condensed", "Arial Narrow", sans-serif',
+  mono: '"IBM Plex Mono", Consolas, monospace',
+  zh: '"Noto Sans SC Variable", "Microsoft YaHei", "PingFang SC", sans-serif',
 }
 
-function wrapCanvasText(
-  context: CanvasRenderingContext2D,
-  value: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  lineHeight: number,
-  maxLines: number,
-) {
-  const words = value.split(' ')
-  const lines: string[] = []
-  let current = ''
-  words.forEach((word) => {
-    const candidate = current ? `${current} ${word}` : word
-    if (context.measureText(candidate).width <= maxWidth || !current) current = candidate
-    else {
-      lines.push(current)
-      current = word
-    }
-  })
-  if (current) lines.push(current)
-  lines.slice(0, maxLines).forEach((line, index) => context.fillText(line, x, y + index * lineHeight))
+function fitFont(context: CanvasRenderingContext2D, text: string, font: (size: number) => string, size: number, maxWidth: number) {
+  let next = size
+  context.font = font(next)
+  while (next > 12 && context.measureText(text).width > maxWidth) {
+    next -= 4
+    context.font = font(next)
+  }
+  return next
+}
+
+/** An archival print plate: photo on the left, set type on the right. */
+function drawTimelineFace(canvas: HTMLCanvasElement, entry: MemoryEntry, index: number) {
+  const context = canvas.getContext('2d')
+  if (!context) return
+  const width = canvas.width
+  const height = canvas.height
+  const s = width / 1696
+  const inset = 62 * s
+  const photoRight = width * 0.5
+  const columnX = photoRight + 74 * s
+  const columnWidth = width - columnX - inset
+  const ink = 'rgba(239, 231, 218, 0.96)'
+  const dim = 'rgba(239, 231, 218, 0.52)'
+  const gold = '#e9be78'
+
+  context.clearRect(0, 0, width, height)
+  context.textBaseline = 'alphabetic'
+
+  // Caption strip on the print itself, like an edge-printed film frame.
+  const captionShade = context.createLinearGradient(0, height - 220 * s, 0, height - inset)
+  captionShade.addColorStop(0, 'rgba(4, 5, 6, 0)')
+  captionShade.addColorStop(1, 'rgba(4, 5, 6, 0.78)')
+  context.fillStyle = captionShade
+  context.fillRect(inset, height - 220 * s, photoRight - inset, 220 * s - inset)
+  context.fillStyle = 'rgba(239, 231, 218, 0.82)'
+  context.font = `500 ${22 * s}px ${CARD_FONTS.mono}`
+  context.letterSpacing = `${4 * s}px`
+  context.fillText(`KLZC ARCHIVE  ·  ${String(index + 1).padStart(2, '0')}`, inset + 30 * s, height - inset - 30 * s)
+  context.textAlign = 'right'
+  context.fillText(entry.team, photoRight - 30 * s, height - inset - 30 * s)
+  context.textAlign = 'left'
+
+  // Hairline frame around the print.
+  context.strokeStyle = 'rgba(239, 231, 218, 0.22)'
+  context.lineWidth = 1.5 * s
+  context.strokeRect(inset, inset, photoRight - inset, height - inset * 2)
+
+  context.fillStyle = gold
+  context.font = `500 ${24 * s}px ${CARD_FONTS.mono}`
+  context.letterSpacing = `${6 * s}px`
+  context.fillText(`NO. ${String(index + 1).padStart(2, '0')}`, columnX, inset + 30 * s)
+  context.fillStyle = dim
+  context.textAlign = 'right'
+  context.fillText(entry.date, width - inset, inset + 30 * s)
+  context.textAlign = 'left'
+  context.fillStyle = 'rgba(239, 231, 218, 0.16)'
+  context.fillRect(columnX, inset + 62 * s, columnWidth, 1.5 * s)
+
+  context.letterSpacing = '0px'
+  context.fillStyle = ink
+  const yearSize = fitFont(context, entry.year, (size) => `italic 400 ${size}px ${CARD_FONTS.serif}`, 250 * s, columnWidth)
+  context.fillText(entry.year, columnX - 6 * s, inset + 62 * s + yearSize * 0.98)
+
+  let y = inset + 62 * s + yearSize * 0.98 + 34 * s
+  context.fillStyle = dim
+  context.font = `500 ${24 * s}px ${CARD_FONTS.mono}`
+  context.letterSpacing = `${5 * s}px`
+  context.fillText(`${entry.place}  ·  ${entry.placeZh}`, columnX, y)
+
+  y += 92 * s
+  context.letterSpacing = `${1.5 * s}px`
+  context.fillStyle = ink
+  context.font = `600 ${68 * s}px ${CARD_FONTS.display}`
+  const titleLines: string[] = []
+  let line = ''
+  for (const word of entry.title.toUpperCase().split(' ')) {
+    const candidate = line ? `${line} ${word}` : word
+    if (context.measureText(candidate).width > columnWidth && line) {
+      titleLines.push(line)
+      line = word
+    } else line = candidate
+  }
+  if (line) titleLines.push(line)
+  titleLines.slice(0, 2).forEach((text, lineIndex) => context.fillText(text, columnX, y + lineIndex * 66 * s))
+  y += (Math.min(2, titleLines.length) - 1) * 66 * s + 58 * s
+
+  context.letterSpacing = '0px'
+  context.fillStyle = 'rgba(239, 231, 218, 0.74)'
+  context.font = `500 ${32 * s}px ${CARD_FONTS.zh}`
+  context.fillText(entry.titleZh, columnX, y)
+
+  const resultY = height - inset - 150 * s
+  context.fillStyle = gold
+  context.fillRect(columnX, resultY - 58 * s, 64 * s, 2 * s)
+  context.font = `600 ${30 * s}px ${CARD_FONTS.mono}`
+  context.letterSpacing = `${4 * s}px`
+  context.fillText(entry.result, columnX, resultY)
+  context.letterSpacing = '0px'
+  context.fillStyle = ink
+  context.font = `500 ${30 * s}px ${CARD_FONTS.zh}`
+  context.fillText(entry.resultZh, columnX, resultY + 50 * s)
+
+  context.fillStyle = 'rgba(239, 231, 218, 0.16)'
+  context.fillRect(columnX, height - inset - 58 * s, columnWidth, 1.5 * s)
+  context.fillStyle = dim
+  context.font = `500 ${22 * s}px ${CARD_FONTS.mono}`
+  context.letterSpacing = `${4 * s}px`
+  context.fillText('OPEN RECORD', columnX, height - inset - 14 * s)
+  context.textAlign = 'right'
+  context.fillStyle = ink
+  context.fillText('查看  ↗', width - inset, height - inset - 14 * s)
+  context.textAlign = 'left'
+  context.letterSpacing = '0px'
 }
 
 function createTimelineFaceTexture(entry: MemoryEntry, index: number, compact: boolean) {
   const canvas = document.createElement('canvas')
   canvas.width = compact ? 1358 : 1696
   canvas.height = compact ? 800 : 1000
-  const context = canvas.getContext('2d')
-  if (!context) return new THREE.CanvasTexture(canvas)
-
-  const width = canvas.width
-  const height = canvas.height
-  const scale = width / 1696
-  const panelX = width * 0.545
-  const pad = 58 * scale
-  const accent = index % 2 ? '#8be4f4' : '#ff3651'
-
-  context.clearRect(0, 0, width, height)
-  const panelGradient = context.createLinearGradient(panelX, 0, width, height)
-  panelGradient.addColorStop(0, 'rgba(3, 9, 13, 0.94)')
-  panelGradient.addColorStop(0.72, 'rgba(2, 6, 10, 0.98)')
-  panelGradient.addColorStop(1, 'rgba(7, 9, 13, 0.99)')
-  context.fillStyle = panelGradient
-  context.fillRect(panelX, 0, width - panelX, height)
-
-  const topShade = context.createLinearGradient(0, 0, 0, 180 * scale)
-  topShade.addColorStop(0, 'rgba(1, 5, 8, 0.82)')
-  topShade.addColorStop(1, 'rgba(1, 5, 8, 0)')
-  context.fillStyle = topShade
-  context.fillRect(0, 0, panelX, 190 * scale)
-  const bottomShade = context.createLinearGradient(0, height - 210 * scale, 0, height)
-  bottomShade.addColorStop(0, 'rgba(1, 5, 8, 0)')
-  bottomShade.addColorStop(1, 'rgba(1, 5, 8, 0.9)')
-  context.fillStyle = bottomShade
-  context.fillRect(0, height - 220 * scale, panelX, 220 * scale)
-
-  context.strokeStyle = 'rgba(216, 238, 241, 0.42)'
-  context.lineWidth = 2 * scale
-  context.strokeRect(22 * scale, 22 * scale, width - 44 * scale, height - 44 * scale)
-  context.beginPath()
-  context.moveTo(panelX, 0)
-  context.lineTo(panelX, height)
-  context.stroke()
-
-  context.fillStyle = accent
-  context.fillRect(panelX - 4 * scale, 70 * scale, 8 * scale, height - 140 * scale)
-  context.beginPath()
-  context.arc(panelX, 118 * scale, 12 * scale, 0, Math.PI * 2)
-  context.fill()
-
-  context.textBaseline = 'alphabetic'
-  context.fillStyle = 'rgba(239, 248, 250, 0.94)'
-  context.font = `${600} ${27 * scale}px "IBM Plex Mono", Consolas, monospace`
-  context.letterSpacing = `${3.2 * scale}px`
-  context.fillText(`ARCHIVE / ${String(index + 1).padStart(2, '0')}`, 52 * scale, 72 * scale)
-  context.fillText(entry.date, 52 * scale, height - 54 * scale)
-  context.textAlign = 'right'
-  context.fillText(entry.team, panelX - 48 * scale, height - 54 * scale)
-  context.textAlign = 'left'
-
-  context.fillStyle = 'rgba(223, 237, 240, 0.72)'
-  context.font = `${600} ${28 * scale}px "IBM Plex Mono", Consolas, monospace`
-  context.fillText(`${entry.place}  /  ${entry.placeZh}`, panelX + pad, 92 * scale)
-
-  context.fillStyle = accent
-  context.font = `700 ${208 * scale}px "Barlow Condensed", "Arial Narrow", sans-serif`
-  context.fillText(entry.year, panelX + pad, 286 * scale)
-
-  context.fillStyle = '#ffffff'
-  context.font = `600 ${78 * scale}px "Barlow Condensed", "Arial Narrow", sans-serif`
-  wrapCanvasText(context, entry.title.toUpperCase(), panelX + pad, 396 * scale, width - panelX - pad * 1.45, 72 * scale, 2)
-
-  context.fillStyle = 'rgba(242, 249, 250, 0.9)'
-  context.font = `600 ${34 * scale}px "Microsoft YaHei", "PingFang SC", sans-serif`
-  context.fillText(entry.titleZh, panelX + pad, 548 * scale)
-
-  context.fillStyle = 'rgba(255, 255, 255, 0.075)'
-  context.fillRect(panelX + pad, 620 * scale, width - panelX - pad * 1.42, 156 * scale)
-  context.fillStyle = accent
-  context.fillRect(panelX + pad, 620 * scale, 5 * scale, 156 * scale)
-  context.fillStyle = accent
-  context.font = `700 ${48 * scale}px "IBM Plex Mono", Consolas, monospace`
-  context.fillText(entry.result, panelX + pad + 28 * scale, 682 * scale)
-  context.fillStyle = 'rgba(239, 247, 248, 0.92)'
-  context.font = `600 ${33 * scale}px "Microsoft YaHei", "PingFang SC", sans-serif`
-  context.fillText(entry.resultZh, panelX + pad + 28 * scale, 738 * scale)
-
-  context.fillStyle = '#f6fbfc'
-  context.font = `600 ${27 * scale}px "IBM Plex Mono", Consolas, monospace`
-  context.fillText('VIEW PROJECT  ↗', panelX + pad, height - 62 * scale)
-  context.textAlign = 'right'
-  context.fillStyle = accent
-  context.fillText('点击查看', width - pad, height - 62 * scale)
-  context.textAlign = 'left'
-
+  drawTimelineFace(canvas, entry, index)
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
   texture.anisotropy = 8
   texture.minFilter = THREE.LinearMipmapLinearFilter
   texture.magFilter = THREE.LinearFilter
-  texture.needsUpdate = true
+  // Canvas only draws with faces that are already loaded; repaint once the
+  // site's display faces (and the Chinese subsets this card needs) arrive.
+  const zhText = `${entry.titleZh}${entry.resultZh}${entry.placeZh}查看`
+  void Promise.all([
+    document.fonts?.load(`italic 400 100px ${CARD_FONTS.serif}`),
+    document.fonts?.load(`600 60px ${CARD_FONTS.display}`),
+    document.fonts?.load(`500 24px ${CARD_FONTS.mono}`),
+    document.fonts?.load(`600 24px ${CARD_FONTS.mono}`),
+    document.fonts?.load(`500 30px ${CARD_FONTS.zh}`, zhText),
+  ]).catch(() => undefined).then(() => {
+    drawTimelineFace(canvas, entry, index)
+    texture.needsUpdate = true
+  })
   return texture
 }
 
@@ -883,9 +924,9 @@ function createPhotoDepthMaterial(texture: THREE.Texture, accentColor: number) {
       }
 
       float roundedMask(vec2 uv) {
-        vec2 p = abs(uv - 0.5) - vec2(0.455, 0.425);
+        vec2 p = abs(uv - 0.5) - vec2(0.497, 0.497);
         float d = length(max(p, 0.0)) + min(max(p.x, p.y), 0.0);
-        return 1.0 - smoothstep(-0.018, 0.012, d);
+        return 1.0 - smoothstep(-0.002, 0.002, d);
       }
 
       void main() {
@@ -914,13 +955,13 @@ function createPhotoDepthMaterial(texture: THREE.Texture, accentColor: number) {
         float glassSweep = pow(max(0.0, 1.0 - abs(vUv.x + vUv.y - 1.18 + uViewOffset.x * 0.22) * 4.6), 5.0);
         float grain = (hash21(vUv * 940.0 + uTime * 0.07) - 0.5) * 0.026;
         vec3 color = mix(blur, sharp, 0.72 + centerLight * 0.15);
-        color = mix(color, color * vec3(0.82, 0.98, 1.12), 0.28);
-        color += uAccent * (glassSweep * (0.14 + uHover * 0.10));
+        color = mix(color, color * vec3(1.03, 1.0, 0.94), 0.22);
+        color += uAccent * (glassSweep * (0.035 + uHover * 0.05));
         color += grain;
 
         float mask = roundedMask(vUv);
         float innerEdge = smoothstep(0.40, 0.68, length(vUv - 0.5));
-        color += uAccent * innerEdge * 0.055;
+        color *= 1.0 - innerEdge * 0.22;
         gl_FragColor = vec4(color, mask * uOpacity);
       }
     `,
@@ -981,14 +1022,13 @@ function createCardVisual(
   // The camera radius tightens on descent, so taper physical card width to
   // preserve a consistent readable screen size and keep the final card whole.
   const baseWidth = THREE.MathUtils.lerp(
-    compact ? 2.84 : 3.38,
-    compact ? 2.36 : 2.72,
+    compact ? 2.5 : 3.38,
+    compact ? 2.08 : 2.72,
     entry.t,
   ) + (index === 4 ? 0.08 : 0)
   const finalCardFit = 1 - smoothStep((entry.t - 0.74) / 0.14) * 0.14
   const width = baseWidth * finalCardFit
   const height = width * 0.59
-  const depth = compact ? 0.37 : 0.42
   const materials: CardVisual['materials'] = []
   const register = <T extends THREE.Material & { opacity: number }>(material: T, opacity: number) => {
     material.transparent = true
@@ -997,61 +1037,49 @@ function createCardVisual(
     return material
   }
 
-  const edgeMaterial = register(new THREE.MeshPhysicalMaterial({
-    color: 0x40515a,
-    metalness: 0.82,
-    roughness: 0.24,
-    clearcoat: 1,
-    clearcoatRoughness: 0.07,
-    sheen: 0.34,
-    sheenColor: new THREE.Color(0xc8f5fb),
-    sheenRoughness: 0.28,
-    envMapIntensity: 1.28,
+  // A matte mount board, thin as a print plate. Everything else is type and
+  // the photograph, so the card reads as an archive print, not a gadget.
+  const boardDepth = 0.05
+  const boardMaterial = register(new THREE.MeshStandardMaterial({
+    color: 0x0b0c0d,
+    metalness: 0.25,
+    roughness: 0.62,
+    envMapIntensity: 0.5,
     depthWrite: false,
-  }), 0.76)
+  }), 0.94)
+  const board = new THREE.Mesh(new RoundedBoxGeometry(width, height, boardDepth, 3, 0.02), boardMaterial)
+  board.castShadow = true
+  group.add(board)
 
-  const bodyMaterial = register(new THREE.MeshPhysicalMaterial({
-    color: 0x03080c,
-    metalness: 0.48,
-    roughness: 0.28,
-    clearcoat: 0.92,
-    clearcoatRoughness: 0.1,
-    envMapIntensity: 1.24,
+  // Soft contact shadow lifts the plate off the haze behind it.
+  const shadowCanvas = document.createElement('canvas')
+  shadowCanvas.width = 256
+  shadowCanvas.height = 256
+  const shadowContext = shadowCanvas.getContext('2d')
+  if (shadowContext) {
+    const falloff = shadowContext.createRadialGradient(128, 128, 20, 128, 128, 128)
+    falloff.addColorStop(0, 'rgba(0, 0, 0, 0.85)')
+    falloff.addColorStop(0.55, 'rgba(0, 0, 0, 0.45)')
+    falloff.addColorStop(1, 'rgba(0, 0, 0, 0)')
+    shadowContext.fillStyle = falloff
+    shadowContext.fillRect(0, 0, 256, 256)
+  }
+  const shadowMaterial = register(new THREE.MeshBasicMaterial({
+    map: new THREE.CanvasTexture(shadowCanvas),
     depthWrite: false,
-  }), 0.9)
-  const body = new THREE.Mesh(new RoundedBoxGeometry(width + 0.12, height + 0.12, depth, 6, 0.13), bodyMaterial)
-  body.position.z = -depth * 0.24
-  body.castShadow = true
-  body.receiveShadow = true
-  group.add(body)
+  }), 0.72)
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(width * 1.4, height * 1.6), shadowMaterial)
+  shadow.position.set(width * 0.03, -height * 0.07, -0.14)
+  shadow.renderOrder = -1
+  group.add(shadow)
 
-  // Four independent chassis rails expose the card's real thickness when it
-  // enters and leaves the reading position, instead of looking like a photo
-  // pasted onto one rounded cube.
-  const railDepth = depth * 1.18
-  for (const railY of [-1, 1]) {
-    const rail = new THREE.Mesh(
-      new RoundedBoxGeometry(width + 0.28, compact ? 0.085 : 0.095, railDepth, 4, 0.035),
-      edgeMaterial,
-    )
-    rail.position.set(0, railY * (height * 0.5 + 0.075), -depth * 0.1)
-    rail.castShadow = !compact
-    group.add(rail)
-  }
-  for (const railX of [-1, 1]) {
-    const rail = new THREE.Mesh(
-      new RoundedBoxGeometry(compact ? 0.085 : 0.095, height + 0.18, railDepth, 4, 0.035),
-      edgeMaterial,
-    )
-    rail.position.set(railX * (width * 0.5 + 0.09), 0, -depth * 0.1)
-    rail.castShadow = !compact
-    group.add(rail)
-  }
-
-  const accentColor = index % 2 ? 0x8be4f4 : 0xff3651
-  const photoWidth = width * 0.505
-  const photoHeight = height * 0.79
-  const photoX = -width * 0.242
+  // The print sits inside the face texture's hairline frame (62px inset on a
+  // 1696 x 1000 canvas, right edge at the centre line).
+  const photoInsetX = width * (62 / 1696)
+  const photoInsetY = height * (62 / 1000)
+  const photoWidth = width * 0.5 - photoInsetX
+  const photoHeight = height - photoInsetY * 2
+  const photoX = -width / 2 + photoInsetX + photoWidth / 2
   let photoDepthMaterial: THREE.ShaderMaterial | null = null
   const photoTexture = textureLoader.load(entry.image, (loaded) => {
     const image = loaded.image as { width?: number, height?: number }
@@ -1071,93 +1099,11 @@ function createCardVisual(
   })
   photoTexture.colorSpace = THREE.SRGBColorSpace
   photoTexture.anisotropy = 8
-  const photoWellMaterial = register(new THREE.MeshStandardMaterial({
-    color: 0x010304,
-    metalness: 0.38,
-    roughness: 0.34,
-    depthWrite: false,
-  }), 0.88)
-  const photoWell = new THREE.Mesh(new RoundedBoxGeometry(photoWidth + 0.18, photoHeight + 0.18, depth * 0.18, 5, 0.075), photoWellMaterial)
-  photoWell.position.set(photoX, -height * 0.002, depth * 0.34)
-  group.add(photoWell)
-
-  const photoEchoMaterial = register(new THREE.MeshBasicMaterial({
-    map: photoTexture,
-    color: index % 2 ? 0x397d8a : 0x8a2537,
-    transparent: true,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    toneMapped: true,
-  }), 0.16)
-  const photoEcho = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth * 0.98, photoHeight * 0.98), photoEchoMaterial)
-  photoEcho.position.set(photoX - width * 0.008, height * 0.012, depth * 0.46)
-  photoEcho.renderOrder = 1
-  group.add(photoEcho)
-
-  const photoGlowMaterial = register(new THREE.MeshBasicMaterial({
-    map: photoTexture,
-    color: accentColor,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    toneMapped: true,
-  }), 0.16)
-  const photoGlow = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth * 1.045, photoHeight * 1.045), photoGlowMaterial)
-  photoGlow.position.set(photoX, -height * 0.002, depth * 0.58)
-  photoGlow.renderOrder = 2
-  group.add(photoGlow)
-
-  photoDepthMaterial = register(createPhotoDepthMaterial(photoTexture, accentColor), 0.96)
+  photoDepthMaterial = register(createPhotoDepthMaterial(photoTexture, 0xe9be78), 0.98)
   const image = new THREE.Mesh(new THREE.PlaneGeometry(photoWidth, photoHeight), photoDepthMaterial)
-  image.position.set(photoX, -height * 0.002, depth * 0.72)
+  image.position.set(photoX, 0, boardDepth / 2 + 0.004)
   image.renderOrder = 4
   group.add(image)
-
-  const photoGlassMaterial = register(new THREE.MeshPhysicalMaterial({
-    color: index % 2 ? 0x95e9f4 : 0xff8798,
-    metalness: 0,
-    roughness: 0.26,
-    transmission: 0.74,
-    thickness: 0.78,
-    ior: 1.48,
-    envMapIntensity: 1.28,
-    sheen: 0.5,
-    sheenColor: new THREE.Color(index % 2 ? 0x8be4f4 : 0xff6d83),
-    sheenRoughness: 0.4,
-    clearcoat: 1,
-    clearcoatRoughness: 0.12,
-    iridescence: 0.36,
-    iridescenceIOR: 1.28,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  }), 0.28)
-  const photoGlass = new THREE.Mesh(
-    new RoundedBoxGeometry(photoWidth + 0.06, photoHeight + 0.06, 0.04, 4, 0.065),
-    photoGlassMaterial,
-  )
-  photoGlass.position.set(photoX, -height * 0.002, depth * 0.94)
-  photoGlass.renderOrder = 7
-  group.add(photoGlass)
-
-  const photoFrameThickness = compact ? 0.03 : 0.035
-  const photoFrameDepth = compact ? 0.075 : 0.085
-  for (const frameY of [-1, 1]) {
-    const frame = new THREE.Mesh(
-      new THREE.BoxGeometry(photoWidth + 0.13, photoFrameThickness, photoFrameDepth),
-      edgeMaterial,
-    )
-    frame.position.set(photoX, frameY * (photoHeight * 0.5 + 0.045), depth * 0.76)
-    group.add(frame)
-  }
-  for (const frameX of [-1, 1]) {
-    const frame = new THREE.Mesh(
-      new THREE.BoxGeometry(photoFrameThickness, photoHeight + 0.13, photoFrameDepth),
-      edgeMaterial,
-    )
-    frame.position.set(photoX + frameX * (photoWidth * 0.5 + 0.045), 0, depth * 0.76)
-    group.add(frame)
-  }
 
   const faceTexture = createTimelineFaceTexture(entry, index, compact)
   const faceMaterial = register(new THREE.MeshBasicMaterial({
@@ -1167,132 +1113,29 @@ function createCardVisual(
     toneMapped: false,
   }), 0.98)
   const face = new THREE.Mesh(new THREE.PlaneGeometry(width, height), faceMaterial)
-  // Keep the information layer optically above the physical glass. The image
-  // and shell still refract underneath it, while type remains pin-sharp.
-  face.position.z = depth * 1.34
-  face.renderOrder = 20
+  face.position.z = boardDepth / 2 + 0.008
+  face.renderOrder = 6
   group.add(face)
 
-  const glassMaterial = register(new THREE.MeshPhysicalMaterial({
-    color: index % 2 ? 0x25434b : 0x39131b,
-    roughness: 0.22,
-    metalness: 0.05,
-    transmission: 0.72,
-    thickness: 0.92,
-    ior: 1.49,
-    envMapIntensity: 1.34,
-    clearcoat: 1,
-    clearcoatRoughness: 0.08,
-    iridescence: 0.42,
-    iridescenceIOR: 1.3,
-    sheen: 0.46,
-    sheenColor: new THREE.Color(index % 2 ? 0x86dce8 : 0xff768d),
-    sheenRoughness: 0.36,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-  }), 0.24)
-  const glass = new THREE.Mesh(new RoundedBoxGeometry(width - 0.08, height - 0.08, 0.12, 6, 0.11), glassMaterial)
-  glass.position.z = depth * 1.04
-  glass.renderOrder = 8
-  group.add(glass)
-
-  const boltMaterial = register(new THREE.MeshStandardMaterial({
-    color: 0xb8c7cc,
-    metalness: 0.96,
-    roughness: 0.18,
-    depthWrite: false,
-  }), 0.82)
-  const boltGeometry = new THREE.CylinderGeometry(compact ? 0.025 : 0.032, compact ? 0.025 : 0.032, 0.045, 18)
-  for (const boltX of [-1, 1]) {
-    for (const boltY of [-1, 1]) {
-      const bolt = new THREE.Mesh(boltGeometry, boltMaterial)
-      bolt.rotation.x = Math.PI / 2
-      bolt.position.set(
-        boltX * (width * 0.5 - 0.105),
-        boltY * (height * 0.5 - 0.105),
-        depth * 1.39,
-      )
-      bolt.renderOrder = 21
-      group.add(bolt)
-    }
-  }
-
-  const louverMaterial = register(new THREE.MeshBasicMaterial({
-    color: accentColor,
-    toneMapped: false,
-    depthWrite: false,
-  }), 0.68)
-  for (let louverIndex = 0; louverIndex < 5; louverIndex += 1) {
-    const louver = new THREE.Mesh(
-      new THREE.BoxGeometry(width * 0.075, compact ? 0.012 : 0.016, 0.018),
-      louverMaterial,
-    )
-    louver.position.set(
-      -width * 0.44 + louverIndex * width * 0.088,
-      height * 0.5 + 0.11,
-      depth * 0.64,
-    )
-    group.add(louver)
-  }
-
-  const signalMaterial = register(new THREE.MeshStandardMaterial({
-    color: accentColor,
-    emissive: accentColor,
-    emissiveIntensity: compact ? 1.35 : 1.4,
-    metalness: 0.35,
-    roughness: 0.22,
-  }), 0.92)
-  const signal = new THREE.Mesh(new THREE.BoxGeometry(width * 0.34, 0.035, 0.055), signalMaterial)
-  signal.position.set(-width * 0.31, -height / 2 - 0.075, depth * 0.7)
-  group.add(signal)
-
-  const rearMaterial = register(new THREE.MeshStandardMaterial({
-    color: 0x060a0d,
-    metalness: 0.84,
-    roughness: 0.31,
-  }), 0.72)
-  const rear = new THREE.Mesh(new RoundedBoxGeometry(width * 0.82, height * 0.72, 0.1, 4, 0.08), rearMaterial)
-  rear.position.set(width * 0.09, -height * 0.08, -depth * 0.72)
-  group.add(rear)
-
-  // The card is physically mounted to the helix. Its local +Z faces outward,
-  // while the twin arms use the rail anchor transformed into card-local space.
-  const trackRadius = 6.04
-  group.updateMatrixWorld(true)
-  const railAnchor = timelinePoint(entry.t, trackRadius, 0.025, orbitOffset)
-  const railAnchorLocal = group.worldToLocal(railAnchor)
-  const mountStart = new THREE.Vector3(0, 0, -depth * 0.5)
-  const mountVector = railAnchorLocal.clone().sub(mountStart)
-  const mountReach = mountVector.length()
-  const mountMaterial = register(new THREE.MeshStandardMaterial({
-    color: 0x263139,
-    metalness: 0.94,
-    roughness: 0.24,
-  }), 0.86)
-  const armGeometry = new THREE.BoxGeometry(
-    compact ? 0.055 : 0.075,
-    compact ? 0.055 : 0.075,
-    mountReach,
-  )
-  for (const armX of [-1, 1]) {
-    const arm = new THREE.Mesh(armGeometry, mountMaterial)
-    arm.position.copy(mountStart).add(new THREE.Vector3(armX * width * 0.27, 0, 0)).addScaledVector(mountVector, 0.5)
-    arm.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), mountVector.clone().normalize())
-    group.add(arm)
-  }
-  const clamp = new THREE.Mesh(
-    new RoundedBoxGeometry(width * 0.64, compact ? 0.08 : 0.11, compact ? 0.08 : 0.12, 3, 0.025),
-    edgeMaterial,
-  )
-  clamp.position.copy(railAnchorLocal)
-  group.add(clamp)
+  // One gold edge light along the base is the card's only accent; hover
+  // brightens it.
+  const accentMaterial = register(new THREE.MeshStandardMaterial({
+    color: 0xe9be78,
+    emissive: 0xe9be78,
+    emissiveIntensity: 0.9,
+    metalness: 0.4,
+    roughness: 0.3,
+  }), 0.95)
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(width - 0.05, 0.008, 0.012), accentMaterial)
+  edge.position.set(0, -height / 2 + 0.002, boardDepth / 2 + 0.002)
+  group.add(edge)
 
   return {
     group,
     baseQuaternion,
     materials,
-    accentMaterial: signalMaterial,
-    baseEmissiveIntensity: compact ? 1.35 : 1.4,
+    accentMaterial,
+    baseEmissiveIntensity: 0.9,
     destination: entry.destination,
     photoMaterial: photoDepthMaterial,
     t: entry.t,
@@ -1355,6 +1198,7 @@ function MechanicalMemoryScene({
     const cardVisuals: CardVisual[] = []
     let robotRoot: THREE.Group | null = null
     let assemblyAura: ReturnType<typeof createAssemblyAura> | null = null
+    let arena: ReturnType<typeof dressArena> | null = null
     let animatedParts: AnimatedPart[] = []
     let activePixelRatio = 1
 
@@ -1403,7 +1247,7 @@ function MechanicalMemoryScene({
     manager.onLoad = () => { forceRender = true }
     const hdrLoader = new HDRLoader(manager)
     hdrLoader.load(
-      '/assets/pbr/empty-warehouse-01-1k.hdr',
+      '/assets/pbr/empty-warehouse-01-512.hdr',
       (texture) => {
         if (cancelled) {
           texture.dispose()
@@ -1411,43 +1255,48 @@ function MechanicalMemoryScene({
         }
         hdrTarget = pmremGenerator.fromEquirectangular(texture)
         scene.environment = hdrTarget.texture
+        arena?.setEnvironment(scene.environment)
         texture.dispose()
       },
       undefined,
       () => undefined,
     )
 
-    scene.add(new THREE.HemisphereLight(0x8bd7e9, 0x16050a, compact ? 0.38 : 0.36))
-    scene.add(new THREE.AmbientLight(0x18323d, compact ? 0.12 : 0.11))
-    const key = new THREE.DirectionalLight(0xf5f1e8, compact ? 1.7 : 1.85)
+    scene.add(new THREE.HemisphereLight(0x8fc9d4, 0x140a05, compact ? 0.16 : 0.14))
+    scene.add(new THREE.AmbientLight(0x18323d, compact ? 0.05 : 0.04))
+    // A spot, not a sun: it follows the robot down and lights only the robot,
+    // the cards and the patch of field under it. A directional key would
+    // flood the whole arena evenly and flatten it into grey geometry.
+    // ~14.7 units from its target; its 28-unit range fades it out before the
+    // stands, and ~470 cd still gives the old 1.85 lux at the robot.
+    const key = new THREE.SpotLight(0xf5f1e8, compact ? 430 : 470, 28, 0.5, 0.55, 2)
     key.position.set(5, 13, 8)
     key.target.position.set(0, -2, 0)
     key.castShadow = true
     const shadowMapSize = compact ? 512 : 1024
     key.shadow.mapSize.set(shadowMapSize, shadowMapSize)
-    key.shadow.camera.left = -9
-    key.shadow.camera.right = 9
-    key.shadow.camera.top = 10
-    key.shadow.camera.bottom = -10
+    key.shadow.camera.near = 2
     key.shadow.camera.far = 55
     key.shadow.bias = -0.00025
     key.shadow.normalBias = 0.025
     scene.add(key, key.target)
-    const redLight = new THREE.SpotLight(0xff244f, compact ? 66 : 72, 30, Math.PI * 0.28, 0.82, 1.45)
-    const cyanLight = new THREE.SpotLight(0x66e5f1, compact ? 58 : 64, 32, Math.PI * 0.3, 0.86, 1.35)
-    const warmRim = new THREE.PointLight(0xff7b4f, compact ? 10.5 : 12, 18, 2)
+    // Range-limited so the rims stop at the robot instead of washing the
+    // stands behind it.
+    const redLight = new THREE.SpotLight(0xe0703a, compact ? 215 : 235, 20, Math.PI * 0.28, 0.82, 2)
+    const cyanLight = new THREE.SpotLight(0x5fb3c2, compact ? 190 : 210, 22, Math.PI * 0.3, 0.86, 2)
+    const warmRim = new THREE.PointLight(0xffb070, compact ? 10.5 : 12, 18, 2)
     redLight.castShadow = false
     cyanLight.castShadow = false
     scene.add(redLight, redLight.target, cyanLight, cyanLight.target, warmRim)
-    const accentLightStops = [0xff3651, 0x8f65d8, 0xe03a72, 0xff4067, 0xd72f86, 0xe06a35]
+    const accentLightStops = [0xe0703a, 0xd9a45a, 0xc8463a, 0xe08a3c, 0xd2553a, 0xe6b06a]
       .map((value) => new THREE.Color(value))
-    const coolLightStops = [0x63dbea, 0x5dd3e8, 0x7f71ff, 0x49d1c1, 0x6f86ff, 0x4c8be0]
+    const coolLightStops = [0x5fb3c2, 0x6fa8bf, 0x4f9db0, 0x78b9c2, 0x5d9fb8, 0x6cb2bd]
       .map((value) => new THREE.Color(value))
-    const rimLightStops = [0xff8a4f, 0x8a5fe8, 0xff6a96, 0x6de5cf, 0xd15fff, 0xffa459]
+    const rimLightStops = [0xffb070, 0xe8c493, 0xff8a5c, 0xa9d4d8, 0xff9b62, 0xffc98a]
       .map((value) => new THREE.Color(value))
-    const fogStops = [0x031015, 0x080818, 0x100614, 0x051312, 0x0c0715, 0x120907]
+    const fogStops = [0x041014, 0x07100f, 0x0d0907, 0x051213, 0x0c0a08, 0x110a06]
       .map((value) => new THREE.Color(value))
-    const backgroundStops = [0x02090d, 0x050611, 0x0b040d, 0x030b0b, 0x08050f, 0x0c0605]
+    const backgroundStops = [0x02090c, 0x050909, 0x0a0605, 0x030b0b, 0x090706, 0x0c0705]
       .map((value) => new THREE.Color(value))
     const sceneBackground = scene.background as THREE.Color
 
@@ -1482,7 +1331,8 @@ function MechanicalMemoryScene({
     if (compact) {
       cinematicPass.uniforms.uGrain.value = 0.004
       cinematicPass.uniforms.uAberration.value = 0.00015
-      cinematicPass.uniforms.uVignette.value = 0.18
+      cinematicPass.uniforms.uVignette.value = 0.24
+      cinematicPass.uniforms.uStreak.value = 0
     }
     composer.addPass(cinematicPass)
     const fxaaPass = compact ? new ShaderPass(FXAAShader) : null
@@ -1507,73 +1357,31 @@ function MechanicalMemoryScene({
       return model
     }
     Promise.all([
-      loadOwnedModel(ENVIRONMENT_URL).catch(() => null),
+      loadOwnedModel(ARENA_URL).catch(() => null),
       loadOwnedModel(ROBOT_URL),
     ]).then(([environment, robot]) => {
       if (cancelled || !robot) return
       window.clearTimeout(loadingTimeout)
-      const refineEnvironmentMaterial = (
-        mesh: THREE.Mesh,
-        opacity: number,
-        tint?: number,
-        emissiveScale = 1,
-      ) => {
-        const sourceMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-        const refined = sourceMaterials.map((source) => {
-          const material = source.clone()
-          material.transparent = true
-          material.opacity = opacity
-          material.depthWrite = false
-          if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
-            if (typeof tint === 'number') material.color.lerp(new THREE.Color(tint), 0.34)
-            material.roughness = Math.max(material.roughness, 0.22)
-            material.envMapIntensity *= 1.08
-            material.emissiveIntensity *= emissiveScale
-          }
-          return material
+      // Land the robot on the field: the arena floor sits at the robot's final
+      // centre height (see the frame loop) minus half its normalised height.
+      const robotSize = new THREE.Box3().setFromObject(robot).getSize(new THREE.Vector3())
+      const robotHalfHeight = (robotSize.y * 5.45) / Math.max(robotSize.x, robotSize.y, robotSize.z, 0.001) / 2
+      const finalRobotY = 8.4 - 35.4 - (compact ? 1.65 : 1.15) + (compact ? 1.8 : 2.05)
+      if (environment) {
+        environment.position.y = finalRobotY - robotHalfHeight * (compact ? 0.52 : 0.62)
+        // Turn the field so the final camera hangs over a roller corner (no
+        // tall goal structure) and looks down the diagonal, broadcast-style.
+        // The camera ends at -82.5 deg; a roller corner sits at 45 deg.
+        environment.rotation.y = THREE.MathUtils.degToRad(127.5)
+        arena = dressArena(environment, {
+          compact,
+          banners: [
+            ...MEMORY_ENTRIES.map((entry) => ({ year: entry.year, place: entry.place, result: entry.result })),
+            { year: '74000M', place: 'CHENGDU', result: 'TEAM 2019 — 2025' },
+          ],
         })
-        mesh.material = Array.isArray(mesh.material) ? refined : refined[0]
-        mesh.renderOrder = mesh.name.includes('SIGNAL') || mesh.name.includes('PRACTICAL') ? 2 : 0
+        arena.setEnvironment(scene.environment)
       }
-
-      environment?.traverse((object) => {
-        if (!(object instanceof THREE.Mesh)) return
-        object.receiveShadow = true
-        object.castShadow = false
-
-        if (object.name.startsWith('FAR_')) {
-          // Far-field megastructure stays opaque so fog, not alpha, softens it.
-          object.receiveShadow = false
-          const material = (Array.isArray(object.material) ? object.material[0] : object.material).clone()
-          if (material instanceof THREE.MeshStandardMaterial) {
-            if (object.name.startsWith('FAR_SIGNAL_')) {
-              material.emissiveIntensity *= object.name.endsWith('CYAN') ? 0.72 : 1.05
-            } else {
-              // Dark architecture that still catches the key/rim, so it reads
-              // as a vault wall in the fog instead of disappearing into it.
-              material.color.setHex(0x141c22)
-              material.roughness = 0.58
-              material.metalness = 0.78
-              material.envMapIntensity = 0.28
-            }
-          }
-          object.material = material
-          return
-        }
-        if (object.name.startsWith('BACKBONE_FILAMENT_')) refineEnvironmentMaterial(object, 0.62, undefined, 1.18)
-        else if (object.name.startsWith('BACKBONE_BRIDGE_')) refineEnvironmentMaterial(object, 0.44, 0x101820)
-        else if (object.name.startsWith('BACKBONE_')) refineEnvironmentMaterial(object, 0.78, 0x0a1117)
-        else if (object.name.startsWith('HALO_SIGNAL_')) refineEnvironmentMaterial(object, 0.46, undefined, 1.05)
-        else if (object.name.startsWith('HALO_METAL_')) refineEnvironmentMaterial(object, 0.28, 0x0b141a)
-        else if (object.name === 'TIMELINE_RAIL_MAIN') refineEnvironmentMaterial(object, 0.28, 0x26353c)
-        else if (object.name === 'TIMELINE_RAIL_COMPANION') refineEnvironmentMaterial(object, 0.1, 0x0d151a)
-        else if (object.name === 'TIMELINE_RAIL_SIGNAL') refineEnvironmentMaterial(object, 0.3, undefined, 0.68)
-        else if (object.name.startsWith('TIMELINE_DOCK_')) refineEnvironmentMaterial(object, 0.72, 0x1c2a31)
-        else if (object.name.startsWith('TIMELINE_PRACTICAL_')) refineEnvironmentMaterial(object, 0.88, undefined, 1.3)
-        else if (object.name.startsWith('CORE_ORBIT_')) refineEnvironmentMaterial(object, 0.5, undefined, 1.05)
-        else if (object.name.startsWith('CROWN_')) refineEnvironmentMaterial(object, 0.54, 0x27343b)
-        else if (object.name.startsWith('PORTAL_')) refineEnvironmentMaterial(object, 0.62, 0x111920)
-      })
       world.remove(robot)
       robotRoot = new THREE.Group()
       world.add(robotRoot)
@@ -1643,6 +1451,10 @@ function MechanicalMemoryScene({
       renderer.setSize(width, height, false)
       composer?.setPixelRatio(pixelRatio)
       composer?.setSize(width, height)
+      cinematicPass.uniforms.uTexel.value.set(
+        1 / Math.max(1, width * pixelRatio),
+        1 / Math.max(1, height * pixelRatio),
+      )
       if (fxaaPass) {
         fxaaPass.uniforms.resolution.value.set(
           1 / Math.max(1, width * pixelRatio),
@@ -1777,6 +1589,7 @@ function MechanicalMemoryScene({
       cloudMaterial.uniforms.uTime.value = reducedMotion ? 0 : elapsed
       cloudMaterial.uniforms.uProgress.value = p
       cinematicPass.uniforms.uTime.value = reducedMotion ? 0 : elapsed
+      arena?.update(reducedMotion ? 0 : elapsed)
       cinematicPass.uniforms.uProgress.value = p
       if (robotRoot) {
         const assemblyProgress = reducedMotion ? 1 : rawProgress
@@ -1789,7 +1602,7 @@ function MechanicalMemoryScene({
           lastAssemblyProgress = assemblyProgress
         }
         robotRoot.rotation.y = -0.42 + p * Math.PI * 0.72
-        robotRoot.position.y = robotY + Math.sin(elapsed * 0.5) * (reducedMotion ? 0 : 0.08)
+        robotRoot.position.y = robotY + Math.sin(elapsed * 0.5) * (reducedMotion ? 0 : 0.08) * (1 - portalSettle)
         robotRoot.scale.setScalar(robotScale)
         if (assemblyAura) {
           assemblyAura.material.uniforms.uTime.value = reducedMotion ? 0 : elapsed

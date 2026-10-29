@@ -100,7 +100,7 @@
   overflow: hidden;
   border-right: 1px solid var(--atlas-line);
   isolation: isolate;
-  background: #06090f;
+  background: #08090a;
 }
 
 .atlas-map-frame::before,
@@ -111,18 +111,18 @@
   pointer-events: none;
 }
 
+/* Lens vignette with a faint warm falloff, like the home scene's grade. */
 .atlas-map-frame::before {
   z-index: 2;
   background:
-    radial-gradient(circle at 50% 48%, transparent 44%, rgba(5, 8, 13, 0.68) 100%),
-    repeating-linear-gradient(0deg, transparent 0 55px, rgba(169, 197, 212, 0.025) 56px),
-    repeating-linear-gradient(90deg, transparent 0 74px, rgba(169, 197, 212, 0.024) 75px);
+    radial-gradient(ellipse 78% 70% at 52% 50%, transparent 40%, rgba(4, 4, 5, 0.82) 100%),
+    radial-gradient(ellipse 60% 50% at 70% 30%, rgba(233, 190, 120, 0.05), transparent 70%);
 }
 
 .atlas-map-frame::after {
   z-index: 3;
-  border: 1px solid rgba(219, 231, 242, 0.03);
-  background: linear-gradient(180deg, rgba(6, 9, 15, 0.2), transparent 24%, transparent 72%, rgba(6, 9, 15, 0.18));
+  border: 1px solid rgba(239, 231, 218, 0.04);
+  background: linear-gradient(180deg, rgba(4, 4, 5, 0.55), transparent 22%, transparent 74%, rgba(4, 4, 5, 0.5));
 }
 
 .atlas-vector-map {
