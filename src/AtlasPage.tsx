@@ -353,6 +353,31 @@ function addArchiveLayers(map: VectorMap) {
   })
 }
 
+// Every place and its label callout, so the world view frames the story on
+// any screen instead of a fixed centre that strands cities off a phone.
+const placeBounds = locations.reduce(
+  (bounds, location) => bounds.extend(location.lngLat).extend(location.callout),
+  new maplibregl.LngLatBounds(locations[0].lngLat, locations[0].lngLat),
+)
+// Labels are centred on their callout point; these are their max sizes
+// (AtlasPage.css: 170px wide, 122px under 520px).
+const labelSize = (frameWidth: number) => ({ width: frameWidth < 520 ? 122 : 170, height: frameWidth < 520 ? 34 : 52 })
+
+function worldCamera(map: VectorMap) {
+  const { width } = map.getContainer().getBoundingClientRect()
+  const label = labelSize(width)
+  const side = label.width / 2 + (width < 520 ? 6 : 24)
+  const camera = map.cameraForBounds(placeBounds, {
+    padding: { top: label.height / 2 + 48, bottom: label.height / 2 + 34, left: side, right: side },
+  })
+  return {
+    center: camera?.center ?? WORLD_VIEW.center,
+    zoom: Math.min(camera?.zoom ?? WORLD_VIEW.zoom, 3.2),
+    pitch: 0,
+    bearing: 0,
+  }
+}
+
 function makeMap(container: HTMLElement, options: Partial<ConstructorParameters<typeof maplibregl.Map>[0]> = {}) {
   return new maplibregl.Map({
     container,
@@ -380,6 +405,10 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
   const [selectedId, setSelectedId] = useState<AtlasLocationId | null>(null)
   const [previewId, setPreviewId] = useState<AtlasLocationId | null>(null)
   const [view, setView] = useState<AtlasView>('world')
+  const viewRef = useRef<AtlasView>('world')
+  const frameRef = useRef<HTMLElement | null>(null)
+  const panelRef = useRef<HTMLElement | null>(null)
+  useEffect(() => { viewRef.current = view }, [view])
   const [mapReady, setMapReady] = useState(false)
   const [mapError, setMapError] = useState(false)
   const [landed, setLanded] = useState(false)
@@ -421,10 +450,17 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
         locations.map((location) => {
           const point = map.project(location.lngLat)
           const callout = map.project(location.callout)
+          // Keep the whole label inside the frame; the leader line still
+          // runs to the true city point.
+          const label = labelSize(bounds.width)
+          const minX = label.width / 2 + 6
+          const minY = label.height / 2 + 40
+          const clampedX = Math.min(Math.max(callout.x, minX), Math.max(minX, bounds.width - minX))
+          const clampedY = Math.min(Math.max(callout.y, minY), Math.max(minY, bounds.height - label.height / 2 - 28))
           return {
             id: location.id,
             point: { x: point.x, y: point.y },
-            callout: { x: callout.x, y: callout.y },
+            callout: { x: clampedX, y: clampedY },
             visible:
               callout.x > -padding &&
               callout.y > -padding &&
@@ -456,6 +492,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
       gradeBasemap(map)
       addArchiveLayers(map)
       showBasemapLabels(map, false)
+      if (viewRef.current === 'world') map.jumpTo(worldCamera(map))
       updateLabelPositions()
       setMapReady(true)
       setMapError(false)
@@ -464,7 +501,10 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
       if (!disposed && !map.isStyleLoaded()) setMapError(true)
     })
     map.on('move', updateLabelPositions)
-    map.on('resize', updateLabelPositions)
+    map.on('resize', () => {
+      if (viewRef.current === 'world' && !map.isMoving() && map.isStyleLoaded()) map.jumpTo(worldCamera(map))
+      updateLabelPositions()
+    })
     map.on('zoom', () => {
       setZoom(map.getZoom())
       updateLabelPositions()
@@ -523,6 +563,13 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
     setPreviewId(null)
     setLanded(false)
     setManualView(false)
+    // A new record starts at its top, and on a stacked (phone) layout the
+    // visitor is brought back up to watch the flight they just started.
+    panelRef.current?.scrollTo({ top: 0 })
+    const frame = frameRef.current
+    if (frame && frame.getBoundingClientRect().top < -40) {
+      frame.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' })
+    }
     // Records remain usable even without WebGL or a basemap connection.
     if (!map || !mapReady || mapError) return
     map.stop()
@@ -570,7 +617,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
     map.stop()
     disableExplore(map)
     showBasemapLabels(map, false)
-    map.flyTo({ ...WORLD_VIEW, duration: reducedMotion ? 0 : 1100, curve: 1.35, essential: false })
+    map.flyTo({ ...worldCamera(map), duration: reducedMotion ? 0 : 1300, curve: 1.35, essential: false })
   }
 
   function resetCityFocus() {
@@ -622,6 +669,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
         <section
           className={`atlas-map-frame is-${view}${landed ? ' is-landed' : ''}`}
           aria-label="地点地图 / Map of places"
+          ref={frameRef}
         >
           <div className="atlas-map-status" aria-hidden="true">
             <span>{view === 'city' ? 'CITY MAP / DRAG TO EXPLORE' : 'WORLD MAP / CHOOSE A CITY'}</span>
@@ -745,7 +793,7 @@ export default function AtlasPage({ navigate, media = {} }: AtlasPageProps) {
           ) : null}
         </section>
 
-        <aside className="atlas-panel" aria-live="polite">
+        <aside className="atlas-panel" aria-live="polite" ref={panelRef}>
           {selectedLocation ? (
             <article className="atlas-record" key={selectedLocation.id}>
               <div className="atlas-record-topline">

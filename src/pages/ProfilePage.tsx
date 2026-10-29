@@ -61,6 +61,7 @@ export default function ProfilePage({ navigate }: { navigate: Navigate }) {
         copy="目前在奥克兰大学读计算机科学。"
         copyEn="Computer Science undergraduate at the University of Auckland."
         image="/assets/uoa-campus.webp"
+        imageHd="/assets/hd/uoa-campus.webp"
         imageAlt="University of Auckland campus"
         position="60% 40%"
         meta={[{ label: 'Based', value: 'Auckland, NZ' }, { label: 'Study', value: 'UoA · Computer Science' }, { label: 'Alias', value: 'KLzc' }]}

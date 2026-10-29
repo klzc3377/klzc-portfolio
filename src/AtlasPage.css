@@ -1316,3 +1316,56 @@
   .atlas-page .atlas-panel { padding: 22px 18px; }
   .atlas-page .atlas-index-item { grid-template-columns: minmax(0, .8fr) minmax(0, .6fr) minmax(0, 1fr); gap: 8px; }
 }
+
+/* Viewport-locked desktop atlas: the map and its controls always fit the
+   screen, and a long record scrolls inside the side panel instead of pushing
+   the zoom / reset / world-view controls below the fold. */
+@media (min-width: 921px) {
+  .atlas-page {
+    height: 100svh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .atlas-header {
+    flex: none;
+  }
+
+  .atlas-layout {
+    flex: 1;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .atlas-map-frame {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .atlas-panel {
+    min-height: 0;
+    max-height: 100%;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(233, 190, 120, 0.35) transparent;
+  }
+}
+
+/* City labels never wrap a two-character name onto two lines. */
+.atlas-map-label__city {
+  white-space: nowrap;
+}
+
+/* Phone labels are too narrow for both names; the list below carries the
+   English, so the map shows the Chinese name whole instead of "Shangh…". */
+@media (max-width: 520px) {
+  .atlas-map-label {
+    min-width: 0;
+  }
+
+  .atlas-map-label__city small {
+    display: none;
+  }
+}

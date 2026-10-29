@@ -52,6 +52,7 @@ export default function RoboticsPage({ navigate }: { navigate: Navigate }) {
         copy="从初中开始参加 VEX，前后约七年。做过 VEX IQ 和 V5RC，也担任过 74000M 队员与队长。"
         copyEn="About seven years in VEX, from VEX IQ to V5RC, including as a member and captain of 74000M."
         image="/assets/robot-build.webp"
+        imageHd="/assets/hd/robot-build.webp"
         imageAlt="Team 74000M VEX robot in raking sunlight"
         position="50% 42%"
         meta={[{ label: 'Team', value: '74000M' }, { label: 'Years', value: '≈ 7' }, { label: 'Role', value: 'Member · Captain' }]}

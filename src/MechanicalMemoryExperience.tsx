@@ -865,10 +865,11 @@ function drawTimelineFace(canvas: HTMLCanvasElement, entry: MemoryEntry, index: 
   context.letterSpacing = '0px'
 }
 
-function createTimelineFaceTexture(entry: MemoryEntry, index: number, compact: boolean) {
+function createTimelineFaceTexture(entry: MemoryEntry, index: number) {
   const canvas = document.createElement('canvas')
-  canvas.width = compact ? 1358 : 1696
-  canvas.height = compact ? 800 : 1000
+  // Cards are read up close on phones too, so every layout gets this size.
+  canvas.width = 1696
+  canvas.height = 1000
   drawTimelineFace(canvas, entry, index)
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace
@@ -1105,7 +1106,7 @@ function createCardVisual(
   image.renderOrder = 4
   group.add(image)
 
-  const faceTexture = createTimelineFaceTexture(entry, index, compact)
+  const faceTexture = createTimelineFaceTexture(entry, index)
   const faceMaterial = register(new THREE.MeshBasicMaterial({
     map: faceTexture,
     side: THREE.DoubleSide,
@@ -1180,10 +1181,13 @@ function MechanicalMemoryScene({
     const constrainedMobile = compact && (hardwareThreads <= 4 || deviceMemory <= 2)
     // Mobile keeps the same lighting and post-processing stack as desktop,
     // while its internal resolution can continuously follow the GPU budget.
-    const compactPixelRatioCap = constrainedMobile ? 1.25 : 1.65
-    const compactPixelBudget = constrainedMobile ? 900_000 : 1_600_000
-    const minimumQualityScale = constrainedMobile ? 0.7 : 0.72
-    let runtimeQualityScale = compact ? (constrainedMobile ? 0.86 : 0.9) : 1
+    // Phones start near their native density (a 3x phone used to render at
+    // ~1.5x and look soft); the quality loop below steps down if the GPU
+    // can't hold the frame rate.
+    const compactPixelRatioCap = constrainedMobile ? 1.6 : 2.25
+    const compactPixelBudget = constrainedMobile ? 1_400_000 : 3_200_000
+    const minimumQualityScale = constrainedMobile ? 0.62 : 0.6
+    let runtimeQualityScale = compact ? (constrainedMobile ? 0.9 : 1) : 1
     const targetFrameRate = constrainedMobile ? 30 : DESKTOP_TARGET_FRAME_RATE
     const renderStep = 1000 / targetFrameRate
     const resolvePixelRatio = (width: number, height: number) => {
@@ -1268,8 +1272,8 @@ function MechanicalMemoryScene({
     // the cards and the patch of field under it. A directional key would
     // flood the whole arena evenly and flatten it into grey geometry.
     // ~14.7 units from its target; its 28-unit range fades it out before the
-    // stands, and ~470 cd still gives the old 1.85 lux at the robot.
-    const key = new THREE.SpotLight(0xf5f1e8, compact ? 430 : 470, 28, 0.5, 0.55, 2)
+    // stands; ~400 cd gives the old 1.85 lux at the robot.
+    const key = new THREE.SpotLight(0xf5f1e8, compact ? 360 : 400, 28, 0.5, 0.55, 2)
     key.position.set(5, 13, 8)
     key.target.position.set(0, -2, 0)
     key.castShadow = true
@@ -1319,11 +1323,14 @@ function MechanicalMemoryScene({
       composer.renderTarget2.samples = DESKTOP_MSAA_SAMPLES
     }
     composer.addPass(new RenderPass(scene, camera))
+    // Only true highlights (lamp lenses, specular glints) bloom. A threshold
+    // under 1 let lit aluminium halo too, which smeared the robot's edges
+    // into a soft glow, worst on phones.
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(1, 1),
-      0.18,
-      compact ? 0.46 : 0.48,
-      compact ? 0.98 : 0.96,
+      0.12,
+      0.34,
+      1.05,
     )
     composer.addPass(bloomPass)
     bloomPass.enabled = !constrainedMobile
@@ -1456,6 +1463,9 @@ function MechanicalMemoryScene({
         1 / Math.max(1, height * pixelRatio),
       )
       if (fxaaPass) {
+        // FXAA softens type and fine detail; at high density the pixels are
+        // already small enough that it only blurs.
+        fxaaPass.enabled = pixelRatio < 1.6
         fxaaPass.uniforms.resolution.value.set(
           1 / Math.max(1, width * pixelRatio),
           1 / Math.max(1, height * pixelRatio),

@@ -12,6 +12,8 @@ type CinematicHeroProps = {
   copy: string
   copyEn?: string
   image: string
+  /** Pre-scaled variant for 2x+ screens (scripts/prepare-hd-heroes.mjs). */
+  imageHd?: string
   imageAlt?: string
   position?: string
   meta?: HeroMeta[]
@@ -20,7 +22,7 @@ type CinematicHeroProps = {
 const ease = [0.16, 1, 0.3, 1] as const
 
 /** Every chapter opens on a full-frame establishing shot. */
-export default function CinematicHero({ chapter, label, title, en, copy, copyEn, image, imageAlt = '', position = 'center', meta = [] }: CinematicHeroProps) {
+export default function CinematicHero({ chapter, label, title, en, copy, copyEn, image, imageHd, imageAlt = '', position = 'center', meta = [] }: CinematicHeroProps) {
   const ref = useRef<HTMLElement | null>(null)
   const reducedMotion = useReducedMotion()
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
@@ -39,6 +41,7 @@ export default function CinematicHero({ chapter, label, title, en, copy, copyEn,
       <motion.div className="cine-hero__plate" style={reducedMotion ? undefined : { y: imageY, scale: imageScale }}>
         <motion.img
           src={image}
+          srcSet={imageHd ? `${image} 1x, ${imageHd} 2x` : undefined}
           alt={imageAlt}
           aria-hidden={imageAlt ? undefined : true}
           style={{ objectPosition: position }}

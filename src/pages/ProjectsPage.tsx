@@ -19,6 +19,7 @@ export default function ProjectsPage({ navigate }: { navigate: Navigate }) {
         copy="从机器人装配到网页交互，把想法做成可以探索的作品。这里记录每个项目的过程与实现。"
         copyEn="From robot assemblies to interactive websites. A collection of projects, with the process behind each one."
         image="/assets/klzc-abstract-bg.webp"
+        imageHd="/assets/hd/klzc-abstract-bg.webp"
         position="62% 30%"
         meta={[{ label: 'Reels', value: String(projects.length).padStart(2, '0') }, { label: 'Span', value: '2019—2026' }, { label: 'Stack', value: 'React · Three.js · GLB' }]}
       />

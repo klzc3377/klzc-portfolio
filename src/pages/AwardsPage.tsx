@@ -54,6 +54,7 @@ export default function AwardsPage({ onOpenAward, selected, navigate }: AwardsPa
         copy="留下来的部分比赛证书。点击任意一帧可以查看大图。"
         copyEn="A selection of competition certificates. Open any frame to view it."
         image="/assets/teamwork-trophy.webp"
+        imageHd="/assets/hd/teamwork-trophy.webp"
         imageAlt="2022–2023 China–Canada VEX Teamwork Champion trophy"
         position="50% 34%"
         meta={[{ label: 'Frames', value: String(awards.length).padStart(2, '0') }, { label: 'Span', value: '2019—2025' }, { label: 'Program', value: 'VEX IQ · V5RC' }]}
