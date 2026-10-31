@@ -2,7 +2,9 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 
 const SEEN_KEY = 'klzc-intro-seen'
-const COUNT_DURATION = 1500
+// Phone visitors arrive from shared links with little patience; the title card
+// behind the leader already reveals without waiting on the 3D scene.
+const COUNT_DURATION = window.matchMedia('(max-width: 760px), (pointer: coarse)').matches ? 850 : 1500
 
 function shouldPlay() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false
@@ -50,7 +52,7 @@ export default function IntroSequence() {
   return (
     <AnimatePresence>
       {visible ? (
-        <motion.div className="intro-sequence" aria-hidden="true" exit={{ pointerEvents: 'none' }} transition={{ duration: 1.1 }}>
+        <motion.div className="intro-sequence" aria-hidden="true" onPointerDown={() => setVisible(false)} exit={{ pointerEvents: 'none' }} transition={{ duration: 1.1 }}>
           <motion.div className="intro-sequence__shutter intro-sequence__shutter--top" exit={{ y: '-100%' }} transition={{ duration: 1.05, ease: [0.76, 0, 0.24, 1] }} />
           <motion.div className="intro-sequence__shutter intro-sequence__shutter--bottom" exit={{ y: '100%' }} transition={{ duration: 1.05, ease: [0.76, 0, 0.24, 1] }} />
           <motion.div className="intro-sequence__content" exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.4 }}>

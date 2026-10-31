@@ -1,4 +1,5 @@
 import {
+  AnimatePresence,
   motion,
   useMotionValueEvent,
   useReducedMotion,
@@ -7,7 +8,7 @@ import {
   useTransform,
   type MotionValue,
 } from 'framer-motion'
-import { ArrowRight, Pause, Play, RotateCcw } from 'lucide-react'
+import { ArrowDown, ArrowRight, Pause, Play, RotateCcw } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react'
 import * as THREE from 'three'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
@@ -56,6 +57,17 @@ type CardVisual = {
 }
 
 const ROBOT_URL = '/models/robot-74000m-assembly.glb'
+// Portrait phones crop the camera-right card rail out of frame, so the scene
+// drops its 3D cards there and a DOM caption carries each memory instead.
+// Keep in sync with the `.mechanical-memory__caption` media query.
+const CAPTION_LAYOUT_QUERY = '(max-width: 760px), (pointer: coarse)'
+const CAPTION_LAYOUT_MAX_ASPECT = 0.8
+// Reveal the title card even if the 3D assets are still streaming on a slow
+// mobile connection; the poster backdrop stands in until the scene is ready.
+const TITLE_LOAD_GRACE = 1600
+// Just past the intro phase (0.105) and still nearest the first memory, so the
+// hero CTA lands on a fully revealed first card / caption.
+const FIRST_MEMORY_STOP = 0.12
 const DESKTOP_TARGET_FRAME_RATE = 60
 const DESKTOP_PIXEL_RATIO_CAP = 1.5
 const DESKTOP_MSAA_SAMPLES = 2
@@ -1175,7 +1187,8 @@ function MechanicalMemoryScene({
     let cancelled = false
     let frame = 0
     let visible = true
-    const compact = window.matchMedia('(max-width: 760px), (pointer: coarse)').matches
+    const compact = window.matchMedia(CAPTION_LAYOUT_QUERY).matches
+    let captionLayout = false
     const hardwareThreads = navigator.hardwareConcurrency || 6
     const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 4
     const constrainedMobile = compact && (hardwareThreads <= 4 || deviceMemory <= 2)
@@ -1472,6 +1485,7 @@ function MechanicalMemoryScene({
         )
       }
       camera.aspect = width / height
+      captionLayout = compact && camera.aspect <= CAPTION_LAYOUT_MAX_ASPECT
       camera.fov = compact ? 54 : 46
       camera.updateProjectionMatrix()
       forceRender = true
@@ -1629,7 +1643,7 @@ function MechanicalMemoryScene({
         })
         card.photoMaterial.uniforms.uOpacity.value = card.photoMaterial.opacity
         card.photoMaterial.uniforms.uTime.value = reducedMotion ? 0 : elapsed
-        card.group.visible = p < 0.94 && distance < (compact ? 0.24 : 0.34)
+        card.group.visible = !captionLayout && p < 0.94 && distance < (compact ? 0.24 : 0.34)
         if (card.group.visible) {
           // The mount never translates off the Blender-authored rail. Only the
           // hinge rotation eases into the live camera quaternion, guaranteeing
@@ -1688,6 +1702,7 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
   const [paused, setPaused] = useState(false)
   const [sceneVersion, setSceneVersion] = useState(0)
   const [phase, setPhase] = useState<'intro' | 'journey' | 'end'>('intro')
+  const [loadGrace, setLoadGrace] = useState(false)
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
   const progress = useSpring(scrollYProgress, reducedMotion
     ? { stiffness: 1000, damping: 1000, mass: 0.01 }
@@ -1707,8 +1722,14 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
     setActiveIndex((current) => current === nearest ? current : nearest)
   })
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoadGrace(true), TITLE_LOAD_GRACE)
+    return () => window.clearTimeout(timer)
+  }, [])
+
   const progressLabel = useMemo(() => String(activeIndex + 1).padStart(2, '0'), [activeIndex])
-  const titleShown = status !== 'loading' || reducedMotion
+  const activeEntry = MEMORY_ENTRIES[activeIndex]
+  const titleShown = status !== 'loading' || reducedMotion || loadGrace
   const titleReveal = (delay: number, kind: 'mask' | 'fade' = 'mask') => ({
     initial: reducedMotion ? false : kind === 'mask' ? { y: '108%' } : { opacity: 0, y: 14 },
     animate: titleShown ? (kind === 'mask' ? { y: 0 } : { opacity: 1, y: 0 }) : undefined,
@@ -1746,16 +1767,53 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
         <div className="mechanical-memory__letterbox" aria-hidden="true"><i /><i /></div>
 
         <motion.header className="mechanical-memory__intro" inert={phase !== 'intro'} style={{ opacity: introOpacity, y: introY }}>
-          <motion.p {...titleReveal(0.1, 'fade')}>Cheng Zhang <span aria-hidden="true">/</span> UoA Computer Science</motion.p>
+          <motion.p {...titleReveal(0.1, 'fade')}>张骋 · Cheng Zhang <span aria-hidden="true">/</span> UoA Computer Science</motion.p>
           <h1>
             <span className="mechanical-memory__line"><motion.span {...titleReveal(0.2)}>From Chengdu</motion.span></span>
             <span className="mechanical-memory__line mechanical-memory__line--outline"><motion.span {...titleReveal(0.34)}>to Auckland</motion.span></span>
           </h1>
-          <motion.div {...titleReveal(0.7, 'fade')}>
+          <motion.div className="mechanical-memory__lede" {...titleReveal(0.7, 'fade')}>
             <strong>2019—NOW</strong>
             <span>一些过去和现在的记录。<em>A record of then and now.</em></span>
           </motion.div>
+          <motion.dl className="mechanical-memory__facts" {...titleReveal(0.82, 'fade')}>
+            <div><dt>≈7</dt><dd>年机器人经历<small>Years of VEX</small></dd></div>
+            <div><dt>74000M</dt><dd>队员与队长<small>Member · Captain</small></dd></div>
+            <div><dt>06</dt><dd>场赛事记录<small>Key events</small></dd></div>
+          </motion.dl>
+          <motion.div className="mechanical-memory__hero-actions" {...titleReveal(0.94, 'fade')}>
+            <button type="button" className="mechanical-memory__hero-primary" onClick={() => jumpTo(FIRST_MEMORY_STOP)}>
+              <span>看比赛经历<small>Play the reel</small></span><ArrowDown size={17} aria-hidden="true" />
+            </button>
+            <a href="/profile" onClick={(event) => routeTo(event, '/profile')}>
+              <span>关于我<small>About me</small></span>
+            </a>
+          </motion.div>
         </motion.header>
+
+        <AnimatePresence mode="wait" initial={false}>
+          {phase === 'journey' ? (
+            <motion.a
+              key={activeEntry.chapter}
+              className="mechanical-memory__caption"
+              href={activeEntry.destination}
+              onClick={(event) => routeTo(event, activeEntry.destination)}
+              initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+              transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <img src={activeEntry.image} alt="" width={84} height={104} decoding="async" />
+              <span>
+                <small>{activeEntry.year} · {activeEntry.placeZh}<b>{progressLabel} / 06</b></small>
+                <strong>{activeEntry.titleZh}</strong>
+                <em>{activeEntry.resultZh}</em>
+                <span>{activeEntry.description}</span>
+              </span>
+              <ArrowRight size={16} aria-hidden="true" />
+            </motion.a>
+          ) : null}
+        </AnimatePresence>
 
         <div className="mechanical-memory__rail" aria-label="记忆章节 / Memory chapters">
           <span>{progressLabel}</span>
@@ -1806,12 +1864,14 @@ export default function MechanicalMemoryExperience({ navigate }: { navigate: (hr
           ) : null}
         </div>
 
-        {status === 'loading' && (
-          <div className="mechanical-memory__loading" role="status">
-            <span>正在载入机械记忆 / Loading mechanical memory</span>
-            <i />
-          </div>
-        )}
+        <AnimatePresence>
+          {status === 'loading' && (
+            <motion.div className="mechanical-memory__loading" role="status" exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0 : 0.9 }}>
+              <span>正在载入机械记忆 / Loading mechanical memory</span>
+              <i />
+            </motion.div>
+          )}
+        </AnimatePresence>
         {status === 'error' && (
           <div className="mechanical-memory__loading mechanical-memory__loading--error" role="status">
             <span>3D 场景暂不可用 / Scene unavailable</span>

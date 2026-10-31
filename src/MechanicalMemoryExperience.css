@@ -146,7 +146,7 @@
   text-shadow: 0 0 40px rgba(233, 190, 120, 0.18);
 }
 
-.mechanical-memory__intro > div {
+.mechanical-memory__lede {
   max-width: 560px;
   margin-top: 40px;
   display: flex;
@@ -157,7 +157,7 @@
   line-height: 1.7;
 }
 
-.mechanical-memory__intro > div::before {
+.mechanical-memory__lede::before {
   content: '';
   width: 1px;
   height: 52px;
@@ -166,7 +166,7 @@
   box-shadow: 0 0 22px rgba(217, 163, 95, 0.5);
 }
 
-.mechanical-memory__intro strong {
+.mechanical-memory__lede strong {
   color: var(--paper);
   font-family: var(--mono);
   font-size: 12px;
@@ -175,11 +175,134 @@
   white-space: nowrap;
 }
 
-.mechanical-memory__intro em {
+.mechanical-memory__lede em {
   display: block;
   color: rgba(236, 231, 220, 0.56);
   font-family: var(--serif);
   font-size: 19px;
+}
+
+/* Who this is, at a glance: the three numbers a first-time visitor (usually
+   on a phone, from a shared link) needs before deciding to keep scrolling. */
+.mechanical-memory__facts {
+  max-width: 560px;
+  margin: 30px 0 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid rgba(236, 231, 220, 0.14);
+}
+
+.mechanical-memory__facts > div {
+  padding: 14px 14px 0 0;
+}
+
+.mechanical-memory__facts > div + div {
+  padding-left: 14px;
+  border-left: 1px solid rgba(236, 231, 220, 0.1);
+}
+
+.mechanical-memory__facts dt {
+  color: var(--paper);
+  font-family: var(--display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.mechanical-memory__facts dd {
+  margin: 6px 0 0;
+  color: rgba(236, 231, 220, 0.78);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mechanical-memory__facts small {
+  display: block;
+  color: rgba(236, 231, 220, 0.46);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mechanical-memory__hero-actions {
+  margin-top: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.mechanical-memory__hero-actions > button,
+.mechanical-memory__hero-actions > a {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 22px;
+  border: 1px solid rgba(236, 231, 220, 0.26);
+  border-radius: 999px;
+  color: var(--paper);
+  background: rgba(2, 4, 6, 0.42);
+  backdrop-filter: blur(10px);
+  font-family: var(--body);
+  font-size: 14px;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 400ms ease, background-color 400ms ease, color 400ms ease, transform 200ms ease;
+}
+
+.mechanical-memory__hero-actions span {
+  display: grid;
+  gap: 2px;
+  line-height: 1.2;
+}
+
+.mechanical-memory__hero-actions small {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.62;
+  text-transform: uppercase;
+}
+
+.mechanical-memory__hero-actions > :active {
+  transform: scale(0.97);
+}
+
+.mechanical-memory__hero-actions > a:hover,
+.mechanical-memory__hero-actions > a:focus-visible {
+  border-color: var(--amber);
+  color: var(--amber-hi);
+}
+
+.mechanical-memory__hero-actions .mechanical-memory__hero-primary {
+  border-color: var(--paper);
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.mechanical-memory__hero-actions .mechanical-memory__hero-primary:hover,
+.mechanical-memory__hero-actions .mechanical-memory__hero-primary:focus-visible {
+  border-color: var(--amber-hi);
+  background: var(--amber-hi);
+}
+
+.mechanical-memory__hero-primary svg {
+  animation: memoryNudge 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes memoryNudge {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(4px); }
+}
+
+/* Phone-only memory caption; see CAPTION_LAYOUT_QUERY in the component. */
+.mechanical-memory__caption {
+  display: none;
 }
 
 .mechanical-memory__rail {
@@ -459,17 +582,22 @@
   color: var(--amber-hi);
 }
 
+/* While the 3D assets stream in, a still of the arena tunnel sits under the
+   title card so a slow connection never shows an empty black frame. */
 .mechanical-memory__loading {
   position: absolute;
-  z-index: 10;
+  z-index: 2;
   inset: 0;
   display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 17px;
-  padding: 90px 24px;
-  color: rgba(236, 231, 220, 0.7);
-  background: #020508;
+  place-content: end;
+  justify-items: end;
+  gap: 12px;
+  padding: 90px var(--gutter) calc(clamp(10px, 2.6vh, 26px) + 26px);
+  color: rgba(236, 231, 220, 0.6);
+  background:
+    linear-gradient(180deg, rgba(2, 5, 8, 0.72) 0%, rgba(2, 5, 8, 0.38) 45%, rgba(2, 5, 8, 0.86) 100%),
+    url('/assets/cinematic-tunnel-environment.webp') 58% center / cover no-repeat,
+    #020508;
   font-family: var(--mono);
   font-size: 12px;
   letter-spacing: 0.14em;
@@ -506,7 +634,10 @@
 }
 
 .mechanical-memory__loading--error {
+  z-index: 10;
   inset: auto 0 0;
+  place-content: center;
+  justify-items: center;
   padding: 22px 24px;
   pointer-events: auto;
   background: rgba(5, 9, 13, 0.93);
@@ -606,28 +737,79 @@
   }
 
   .mechanical-memory__intro > p {
-    max-width: 260px;
+    margin-bottom: 18px;
     font-size: 11px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
+  }
+
+  .mechanical-memory__intro > p::before {
+    width: 20px;
+    margin-right: 8px;
   }
 
   .mechanical-memory__intro h1 {
     font-size: clamp(54px, 16.5vw, 82px);
   }
 
-  .mechanical-memory__intro > div {
+  .mechanical-memory__lede {
+    margin-top: 26px;
     gap: 16px;
     align-items: flex-start;
     font-size: 14px;
   }
 
-  .mechanical-memory__intro > div::before {
-    height: 64px;
+  .mechanical-memory__lede::before {
+    height: 52px;
   }
 
-  .mechanical-memory__intro > div {
+  .mechanical-memory__lede {
     display: grid;
     grid-template-columns: 1px 76px minmax(0, 1fr);
+  }
+
+  .mechanical-memory__lede em {
+    font-size: 17px;
+  }
+
+  .mechanical-memory__facts {
+    margin-top: 22px;
+    grid-template-columns: 0.85fr 1.2fr 0.95fr;
+  }
+
+  .mechanical-memory__facts small {
+    letter-spacing: 0.04em;
+  }
+
+  .mechanical-memory__facts > div {
+    padding-right: 8px;
+  }
+
+  .mechanical-memory__facts > div + div {
+    padding-left: 12px;
+  }
+
+  .mechanical-memory__facts dt {
+    font-size: 26px;
+  }
+
+  .mechanical-memory__facts dd {
+    font-size: 12px;
+  }
+
+  .mechanical-memory__hero-actions {
+    margin-top: 22px;
+    flex-wrap: nowrap;
+  }
+
+  .mechanical-memory__hero-actions > button,
+  .mechanical-memory__hero-actions > a {
+    min-height: 50px;
+    padding: 8px 18px;
+  }
+
+  .mechanical-memory__hero-actions .mechanical-memory__hero-primary {
+    flex: 1 1 auto;
+    justify-content: space-between;
   }
 
   /* The intro title owns the frame until the journey begins. */
@@ -689,6 +871,135 @@
     width: 100%;
     min-width: 0;
   }
+
+  .mechanical-memory__loading {
+    place-content: end center;
+    justify-items: center;
+    padding: 90px 24px calc(clamp(10px, 2.6vh, 26px) + 72px);
+  }
+}
+
+/* Short phones (iPhone SE class): tighten the title card so the actions stay
+   above the bottom control bar. */
+@media (max-width: 760px) and (max-height: 700px) {
+  .mechanical-memory__intro {
+    top: 96px;
+  }
+
+  .mechanical-memory__intro h1 {
+    font-size: clamp(48px, 14.5vw, 64px);
+  }
+
+  .mechanical-memory__lede {
+    margin-top: 18px;
+  }
+
+  .mechanical-memory__lede em {
+    display: none;
+  }
+
+  .mechanical-memory__lede::before {
+    height: 22px;
+  }
+
+  .mechanical-memory__facts,
+  .mechanical-memory__hero-actions {
+    margin-top: 16px;
+  }
+}
+
+/* Portrait phones: the scene hides its camera-right 3D cards (they fall out of
+   frame), so each memory is told by a tappable caption above the controls. */
+@media (max-width: 760px) and (max-aspect-ratio: 4/5), (pointer: coarse) and (max-aspect-ratio: 4/5) {
+  .mechanical-memory__rail {
+    top: 40%;
+  }
+
+  .mechanical-memory__caption {
+    position: absolute;
+    z-index: 6;
+    left: 16px;
+    right: 16px;
+    bottom: calc(clamp(10px, 2.6vh, 26px) + 66px);
+    max-width: 520px;
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr) 16px;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px 10px 10px;
+    border: 1px solid rgba(236, 231, 220, 0.16);
+    border-radius: 14px;
+    color: var(--paper);
+    background: linear-gradient(135deg, rgba(14, 22, 28, 0.82), rgba(4, 7, 10, 0.88));
+    backdrop-filter: blur(14px) saturate(1.2);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mechanical-memory__caption:active {
+    border-color: var(--amber);
+  }
+
+  .mechanical-memory__caption > img {
+    width: 84px;
+    height: 104px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(236, 231, 220, 0.06);
+  }
+
+  .mechanical-memory__caption > span {
+    min-width: 0;
+    display: grid;
+    gap: 4px;
+  }
+
+  .mechanical-memory__caption small {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--amber-hi);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+  }
+
+  .mechanical-memory__caption small b {
+    color: rgba(236, 231, 220, 0.46);
+    font-weight: 400;
+  }
+
+  .mechanical-memory__caption strong {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .mechanical-memory__caption em {
+    justify-self: start;
+    padding: 2px 8px;
+    border: 1px solid rgba(217, 163, 95, 0.4);
+    border-radius: 999px;
+    color: var(--amber-hi);
+    font-size: 11.5px;
+    font-style: normal;
+    line-height: 1.5;
+  }
+
+  .mechanical-memory__caption > span > span {
+    display: -webkit-box;
+    overflow: hidden;
+    color: rgba(236, 231, 220, 0.66);
+    font-size: 12px;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .mechanical-memory__caption > svg {
+    color: rgba(236, 231, 220, 0.5);
+  }
 }
 
 @media (max-height: 540px) and (orientation: landscape) {
@@ -700,8 +1011,16 @@
     font-size: clamp(42px, 10svh, 66px);
   }
 
-  .mechanical-memory__intro > div {
+  .mechanical-memory__lede {
     margin-top: 20px;
+  }
+
+  .mechanical-memory__facts {
+    display: none;
+  }
+
+  .mechanical-memory__hero-actions {
+    margin-top: 16px;
   }
 
   .mechanical-memory__rail button {
@@ -727,7 +1046,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mechanical-memory__cue i::after,
-  .mechanical-memory__loading i::after {
+  .mechanical-memory__loading i::after,
+  .mechanical-memory__hero-primary svg {
     animation: none;
   }
 
