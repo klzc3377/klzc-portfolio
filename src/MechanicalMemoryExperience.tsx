@@ -48,6 +48,14 @@ type MemoryEntry = {
 type CardVisual = {
   group: THREE.Group
   baseQuaternion: THREE.Quaternion
+  /** Reading pose in the node camera's own space; see `frameCard`. */
+  frame: {
+    cameraPosition: THREE.Vector3
+    cameraQuaternion: THREE.Quaternion
+    rest: THREE.Vector3
+    halfWidth: number
+    halfHeight: number
+  }
   materials: Array<{ material: THREE.Material & { opacity: number }, opacity: number }>
   accentMaterial: THREE.MeshStandardMaterial
   baseEmissiveIntensity: number
@@ -71,6 +79,20 @@ const FIRST_MEMORY_STOP = 0.12
 const DESKTOP_TARGET_FRAME_RATE = 60
 const DESKTOP_PIXEL_RATIO_CAP = 1.5
 const DESKTOP_MSAA_SAMPLES = 2
+const DESKTOP_FOV = 46
+const DESKTOP_REFERENCE_ASPECT = 16 / 9
+const DESKTOP_MAX_FOV = 58
+
+/**
+ * The scene is composed for 16:9. On narrower desktop windows (16:10 laptops,
+ * 4:3) hold the horizontal framing instead, so the robot and the camera-right
+ * card keep their places and the extra height shows more of the arena.
+ */
+function desktopFov(aspect: number) {
+  if (aspect >= DESKTOP_REFERENCE_ASPECT) return DESKTOP_FOV
+  const tanHalf = Math.tan(THREE.MathUtils.degToRad(DESKTOP_FOV / 2)) * DESKTOP_REFERENCE_ASPECT / aspect
+  return Math.min(DESKTOP_MAX_FOV, THREE.MathUtils.radToDeg(Math.atan(tanHalf) * 2))
+}
 
 const CINEMATIC_SHADER = {
   uniforms: {
@@ -80,7 +102,8 @@ const CINEMATIC_SHADER = {
     uGrain: { value: 0.006 },
     uAberration: { value: 0.00024 },
     uVignette: { value: 0.34 },
-    uStreak: { value: 0.16 },
+    uStreak: { value: 0.11 },
+    uToe: { value: 0.66 },
     uTexel: { value: new THREE.Vector2(1 / 1920, 1 / 1080) },
   },
   vertexShader: `
@@ -98,6 +121,7 @@ const CINEMATIC_SHADER = {
     uniform float uAberration;
     uniform float uVignette;
     uniform float uStreak;
+    uniform float uToe;
     uniform vec2 uTexel;
     varying vec2 vUv;
 
@@ -127,8 +151,12 @@ const CINEMATIC_SHADER = {
         vec3 streak = vec3(0.0);
         float spread = uTexel.x * 6.0;
         float weightSum = 0.0;
+        // Sixteen taps are far too sparse for a 22% smear: undithered, every
+        // bright beam was stamped out as a row of ghost copies. Offsetting the
+        // taps per pixel turns those copies into one continuous streak.
+        float dither = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
         for (int i = 1; i <= 8; i++) {
-          float fi = float(i);
+          float fi = float(i) - 1.0 + dither;
           float dist = spread * fi * fi;
           float w = exp(-fi * 0.42);
           streak += (highlights(vUv + vec2(dist, 0.0)) + highlights(vUv - vec2(dist, 0.0))) * w;
@@ -159,6 +187,9 @@ const CINEMATIC_SHADER = {
       float shadowRoom = 1.0 - smoothstep(0.06, 0.6, luminance);
       color += (cool * leftPool * 0.07 + warm * rightPool * 0.06) * shadowRoom;
       color += vec3(0.004, 0.008, 0.01) * shadowRoom;
+      // Print toe: sink the shadows so atmospheric haze reads as depth rather
+      // than a flat grey wash, without touching midtones or highlights.
+      color *= mix(uToe, 1.0, smoothstep(0.0, 0.32, luminance));
       float grain = (random(vUv * vec2(1920.0, 1080.0)) - 0.5) * uGrain * (0.55 + luminance * 0.45);
       color += grain;
       gl_FragColor = vec4(color, 1.0);
@@ -1146,6 +1177,13 @@ function createCardVisual(
   return {
     group,
     baseQuaternion,
+    frame: {
+      cameraPosition: activeCameraPosition,
+      cameraQuaternion: activeCameraQuaternion,
+      rest: group.position.clone().sub(activeCameraPosition).applyQuaternion(activeCameraQuaternion.clone().invert()),
+      halfWidth: width / 2,
+      halfHeight: height / 2,
+    },
     materials,
     accentMaterial,
     baseEmissiveIntensity: 0.9,
@@ -1153,6 +1191,28 @@ function createCardVisual(
     photoMaterial: photoDepthMaterial,
     t: entry.t,
   } satisfies CardVisual
+}
+
+// Share of the half-frame a card may reach, leaving the chapter rail (right)
+// and the control bar (bottom) clear.
+const CARD_SAFE_X = 0.82
+const CARD_SAFE_Y = 0.8
+
+/**
+ * Cards hang at a fixed orbit offset, but the camera closes in as it descends,
+ * so late cards (and any card on a 16:10 or 4:3 screen) drifted past the right
+ * edge. Slide each one back inside the safe frame of its own node camera.
+ */
+function frameCard(card: CardVisual, camera: THREE.PerspectiveCamera) {
+  const { cameraPosition, cameraQuaternion, rest, halfWidth, halfHeight } = card.frame
+  const depth = Math.max(0.5, -rest.z)
+  const tanHalfV = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+  const maxX = tanHalfV * camera.aspect * depth * CARD_SAFE_X - halfWidth
+  const minY = halfHeight - tanHalfV * depth * CARD_SAFE_Y
+  card.group.position
+    .set(Math.min(rest.x, maxX), Math.max(rest.y, minY), rest.z)
+    .applyQuaternion(cameraQuaternion)
+    .add(cameraPosition)
 }
 
 function loadGltf(loader: GLTFLoader, url: string) {
@@ -1240,7 +1300,7 @@ function MechanicalMemoryScene({
     renderer.setClearColor(0x03080c, 1)
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = compact ? 1.02 : 0.98
+    renderer.toneMappingExposure = compact ? 0.96 : 0.92
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     renderer.shadowMap.autoUpdate = false
@@ -1286,7 +1346,7 @@ function MechanicalMemoryScene({
     // flood the whole arena evenly and flatten it into grey geometry.
     // ~14.7 units from its target; its 28-unit range fades it out before the
     // stands; ~400 cd gives the old 1.85 lux at the robot.
-    const key = new THREE.SpotLight(0xf5f1e8, compact ? 360 : 400, 28, 0.5, 0.55, 2)
+    const key = new THREE.SpotLight(0xf5f1e8, compact ? 300 : 330, 28, 0.5, 0.55, 2)
     key.position.set(5, 13, 8)
     key.target.position.set(0, -2, 0)
     key.castShadow = true
@@ -1486,8 +1546,9 @@ function MechanicalMemoryScene({
       }
       camera.aspect = width / height
       captionLayout = compact && camera.aspect <= CAPTION_LAYOUT_MAX_ASPECT
-      camera.fov = compact ? 54 : 46
+      camera.fov = compact ? 54 : desktopFov(camera.aspect)
       camera.updateProjectionMatrix()
+      cardVisuals.forEach((card) => frameCard(card, camera))
       forceRender = true
       cloudMaterial.uniforms.uPixelRatio.value = pixelRatio
       particleMaterial.uniforms.uPixelRatio.value = pixelRatio

@@ -349,6 +349,10 @@ export function dressArena(root: THREE.Object3D, options: { compact: boolean, ba
       // House lights are off: the bowl only reads by its rim, the LED boards
       // and the light falling off the field, never by flat ambient fill.
       material.envMapIntensity = object.name.startsWith('FIELD_') ? 0.35 : 0.12
+      // The foam tiles fill the closing frames; at their authored value they
+      // read as a flat pale slab, so sit them down toward graphite and let the
+      // discs, tape and robot carry the light.
+      if (material.name.startsWith('Field_Tile') && !dimmed.includes(material)) material.color.multiplyScalar(0.58)
       dimmed.push(material)
     }
   })
@@ -414,9 +418,13 @@ export function dressArena(root: THREE.Object3D, options: { compact: boolean, ba
 
   // Four field spots from the rig corners pool light on the field and let it
   // fall off before the stands, like a broadcast with the house lights down.
+  // Linear rather than inverse-square falloff, matched at the field (~38.6
+  // units down the beam): the robot descends through these cones, and 1/d²
+  // lit it four times hotter halfway down than on the floor, clipping the
+  // aluminium to flat white.
   const rigY = 32.2
   for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-    const spot = new THREE.SpotLight(0xffe6c4, compact ? 1100 : 1300, 0, 0.3, 0.5, 2)
+    const spot = new THREE.SpotLight(0xffe6c4, compact ? 22 : 25, 0, 0.3, 0.5, 1)
     spot.position.set(sx * 12.5, rigY, sz * 12.5)
     spot.target.position.set(-sx * 2.5, 0, -sz * 2.5)
     root.add(spot, spot.target)

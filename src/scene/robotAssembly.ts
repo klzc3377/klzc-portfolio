@@ -65,7 +65,7 @@ export function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group,
     { color: 0x151b21, metalness: 0.25, roughness: 0.48 },
     { color: 0x454d55, metalness: 0.86, roughness: 0.26 },
     { color: 0x92704a, metalness: 0.85, roughness: 0.3 },
-    { color: 0x9da6ad, metalness: 0.92, roughness: 0.28 },
+    { color: 0x9da6ad, metalness: 0.92, roughness: 0.38 },
   ]
   const robotMaterials = robotMaterialSpecs.map((spec, index) => new THREE.MeshPhysicalMaterial({
     color: spec.color,

@@ -726,7 +726,7 @@ html[data-cinematic-cursor='enabled'] .cine-cursor[data-visible='true'] {
   gap: clamp(18px, 3vw, 44px);
   padding: 0 var(--gutter) env(safe-area-inset-bottom);
   color: var(--paper-mute);
-  background: linear-gradient(0deg, rgba(5, 6, 7, 0.94), rgba(5, 6, 7, 0.55) 62%, transparent);
+  background: linear-gradient(0deg, rgba(5, 6, 7, 0.96), rgba(5, 6, 7, 0.78) 58%, transparent);
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.1em;
@@ -907,7 +907,7 @@ html[data-cinematic-cursor='enabled'] .cine-cursor[data-visible='true'] {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(0.32) sepia(0.14) contrast(1.1) brightness(0.62);
+  filter: grayscale(0.2) sepia(0.12) contrast(1.08) brightness(0.7);
 }
 
 .cine-hero__grade {
@@ -1311,9 +1311,14 @@ html[data-cinematic-cursor='enabled'] .cine-cursor[data-visible='true'] {
     linear-gradient(90deg, rgba(5, 6, 7, 0.7), transparent 70%);
 }
 
+.chapter-bridge__plate[data-developed] img {
+  filter: grayscale(0.28) sepia(0.12) contrast(1.08) brightness(0.5);
+  transform: scale(1.06);
+}
+
 .chapter-bridge:hover .chapter-bridge__plate img,
 .chapter-bridge:focus-visible .chapter-bridge__plate img {
-  filter: grayscale(0.2) sepia(0.12) contrast(1.08) brightness(0.55);
+  filter: grayscale(0.12) sepia(0.12) contrast(1.08) brightness(0.6);
   transform: scale(1.02);
 }
 
