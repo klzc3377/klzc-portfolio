@@ -66,20 +66,27 @@ export function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group,
     { color: 0x454d55, metalness: 0.86, roughness: 0.26 },
     { color: 0x92704a, metalness: 0.85, roughness: 0.3 },
     { color: 0x9da6ad, metalness: 0.92, roughness: 0.38 },
+    // Moulded plastic and rubber: the omni wheels and V5 motors.
+    { color: 0x2b3036, metalness: 0.18, roughness: 0.56 },
   ]
+  const MOULDED_MATERIAL = 6
   const robotMaterials = robotMaterialSpecs.map((spec, index) => new THREE.MeshPhysicalMaterial({
     color: spec.color,
     metalness: spec.metalness,
     roughness: spec.roughness,
     envMapIntensity: index === 5 ? 1.12 : 0.92,
-    clearcoat: index === 2 ? 0.04 : 0.16,
+    clearcoat: index === 2 || index === MOULDED_MATERIAL ? 0.04 : 0.16,
     clearcoatRoughness: 0.32,
   }))
   model.traverse((object) => {
     if (!(object instanceof THREE.Mesh) || !object.visible) return
     const index = meshes.length
     const colorRoll = seededNoise(index + 211)
-    const materialIndex = colorRoll < 0.08
+    // Wheels and motors are named in the model; every other part is anonymous
+    // structure and takes a metal finish by roll.
+    const materialIndex = /^(wheel|motor)_/.test(object.name)
+      ? MOULDED_MATERIAL
+      : colorRoll < 0.08
       ? 0
       : colorRoll < 0.15
         ? 1
@@ -121,7 +128,7 @@ export function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group,
 
   const hostWorldInverse = host.matrixWorld.clone().invert()
 
-  // Batch the 436 source meshes on desktop as well as mobile.
+  // Batch the source meshes on desktop as well as mobile.
   // Individual meshes remain a compatibility fallback below.
   {
     type BatchEntry = {
@@ -205,14 +212,18 @@ export function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group,
     const batchedParts: AnimatedPart[] = []
     try {
       groupedEntries.forEach((entries) => {
-        const totalVertices = entries.reduce(
-          (sum, entry) => sum + entry.object.geometry.getAttribute('position').count,
+        // Repeated parts (spacers, gears, wheels, motors) share one geometry
+        // in the model, so upload each geometry once and instance it.
+        const geometries = [...new Set(entries.map((entry) => entry.object.geometry))]
+        const totalVertices = geometries.reduce(
+          (sum, geometry) => sum + geometry.getAttribute('position').count,
           0,
         )
-        const totalIndices = entries.reduce(
-          (sum, entry) => sum + (entry.object.geometry.index?.count ?? 0),
+        const totalIndices = geometries.reduce(
+          (sum, geometry) => sum + (geometry.index?.count ?? 0),
           0,
         )
+        const geometryIds = new Map<THREE.BufferGeometry, number>()
         const material = robotMaterials[entries[0].materialIndex]
         const batch = new THREE.BatchedMesh(entries.length, totalVertices, totalIndices, material)
         batch.castShadow = entries[0].castsShadow
@@ -223,7 +234,11 @@ export function configureRobotAssembly(model: THREE.Object3D, host: THREE.Group,
         batches.push(batch)
 
         entries.forEach((entry) => {
-          const geometryId = batch.addGeometry(entry.object.geometry)
+          let geometryId = geometryIds.get(entry.object.geometry)
+          if (geometryId === undefined) {
+            geometryId = batch.addGeometry(entry.object.geometry)
+            geometryIds.set(entry.object.geometry, geometryId)
+          }
           const instanceId = batch.addInstance(geometryId)
           batch.setMatrixAt(instanceId, entry.finalMatrix)
           batchedParts.push({

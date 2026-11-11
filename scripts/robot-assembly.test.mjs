@@ -14,11 +14,19 @@ async function loadRobot() {
 }
 
 for (const compact of [false, true]) {
-  test(`real 74000M assembly preserves all 436 parts and batches correctly (${compact ? 'mobile' : 'desktop'})`, async () => {
+  test(`real 74000M assembly preserves all 446 parts and batches correctly (${compact ? 'mobile' : 'desktop'})`, async () => {
     const robot = await loadRobot()
     let sourceCount = 0
-    robot.traverse((object) => { if (object.isMesh) sourceCount++ })
-    assert.equal(sourceCount, 436)
+    const named = { wheel: 0, motor: 0 }
+    robot.traverse((object) => {
+      if (!object.isMesh) return
+      sourceCount++
+      const kind = /^(wheel|motor)_/.exec(object.name)?.[1]
+      if (kind) named[kind]++
+    })
+    assert.equal(sourceCount, 446)
+    // The drivetrain the first export dropped: four omni wheels, six V5 motors.
+    assert.deepEqual(named, { wheel: 4, motor: 6 })
     const host = new THREE.Group()
     const parts = configureRobotAssembly(robot, host, compact)
     assert.equal(parts.length, sourceCount)
